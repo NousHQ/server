@@ -71,7 +71,8 @@ def indexer(client: Client, data: dict, user_id: str):
 
 
     print("[*] Indexing document: ", uri)
-    with client.batch(batch_size=25, num_workers=2) as batch:
+    client.batch.configure(batch_size=10, num_workers=1)
+    with client.batch as batch:
         parent_uuid = batch.add_data_object(
             data_object={
                 'uri': uri,
