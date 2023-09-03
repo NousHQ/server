@@ -74,16 +74,23 @@ async def test(request: Request, current_user: TokenData = Depends(get_current_u
     return {"status": "ok"}
 
 
+from fastapi import BackgroundTasks
+
 @app.post("/api/save")
-async def save(request: Request, current_user: TokenData = Depends(get_current_user)):
+async def save(request: Request, background_tasks: BackgroundTasks, current_user: TokenData = Depends(get_current_user)):
     user_id = current_user.sub.replace("-", "_")
     data = await request.json()
     pprint(user_id)
 
-    if (indexer(client=get_weaviate_client(), data=data, user_id=user_id)):
-        return {"status": "ok"}
-    else:
-        raise HTTPException(status_code=400, detail="Failed to process request")
+    def save_data():
+        if (indexer(client=get_weaviate_client(), data=data, user_id=user_id)):
+            print("Data saved successfully")
+        else:
+            print("Failed to save data")
+
+    background_tasks.add_task(save_data)
+
+    return {"status": "ok"}
 
 
 @app.get("/api/search")
