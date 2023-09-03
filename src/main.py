@@ -28,10 +28,7 @@ def get_weaviate_client():
 app = FastAPI()
 
 origins = [
-    "https://nous-frontend.vercel.app",
-    "http://localhost",
-    "http://localhost:5173",
-    "http://localhost:3000"
+    "https://app.nous.fyi"
 ]
 
 app.add_middleware(
