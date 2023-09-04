@@ -18,7 +18,7 @@ def indexer(client: Client, data: dict, user_id: str):
     document["chunked_content"] = preprocess(document)
     document["chunked_content"].append(title)
 
-    print("[*] Prepped document: ", uri)
+    # print("[*] Prepped document: ", uri)
 
     source_class = settings.KNOWLEDGE_SOURCE_CLASS.format(user_id)
     content_class = settings.CONTENT_CLASS.format(user_id)
@@ -97,7 +97,7 @@ def indexer(client: Client, data: dict, user_id: str):
                     from_object_class_name=content_class,
                     to_object_class_name=source_class
                 )
-                print(f"[*] Added chunk no. {i} out of {total_chunks}")
+                # print(f"[*] Added chunk no. {i} out of {total_chunks}")
         except Exception as e:
             print("[!] Failed to index document: ", uri, e)
             print(chunk)

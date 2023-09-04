@@ -5,6 +5,7 @@ from typing import Optional
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
+from fastapi.concurrency import run_in_threadpool
 from jose import JWTError, jwt
 from pydantic import BaseModel
 import weaviate
@@ -73,17 +74,18 @@ async def test(request: Request, current_user: TokenData = Depends(get_current_u
 
 from fastapi import BackgroundTasks
 
-@app.post("/api/save")
 async def save(request: Request, background_tasks: BackgroundTasks, current_user: TokenData = Depends(get_current_user)):
     user_id = current_user.sub.replace("-", "_")
     data = await request.json()
     pprint(user_id)
 
-    def save_data():
-        if (indexer(client=get_weaviate_client(), data=data, user_id=user_id)):
-            print("Data saved successfully")
-        else:
-            print("Failed to save data")
+    async def save_data():
+        try:
+            await run_in_threadpool(indexer, client=get_weaviate_client(), data=data, user_id=user_id)
+        except Exception as e:
+            print(f"Error in saving data: {e}")
+            # Optionally, you can also return an error response to the client or log the error.
+
 
     background_tasks.add_task(save_data)
 
