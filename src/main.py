@@ -2,7 +2,7 @@ from functools import lru_cache
 from pprint import pprint
 from typing import Optional
 
-from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi import Depends, FastAPI, HTTPException, Request, status, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.concurrency import run_in_threadpool
@@ -71,9 +71,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 async def test(request: Request, current_user: TokenData = Depends(get_current_user)):
     return {"status": "ok"}
 
-
-from fastapi import BackgroundTasks
-
+@app.post("/api/save")
 async def save(request: Request, background_tasks: BackgroundTasks, current_user: TokenData = Depends(get_current_user)):
     user_id = current_user.sub.replace("-", "_")
     data = await request.json()
