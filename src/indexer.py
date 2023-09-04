@@ -71,8 +71,9 @@ def indexer(client: Client, data: dict, user_id: str):
 
 
     print("[*] Indexing document: ", uri)
-    client.batch.configure(batch_size=10, num_workers=1)
+    client.batch.configure(batch_size=50, num_workers=2)
     with client.batch as batch:
+        total_chunks = len(document["chunked_content"])
         parent_uuid = batch.add_data_object(
             data_object={
                 'uri': uri,
@@ -81,7 +82,7 @@ def indexer(client: Client, data: dict, user_id: str):
             class_name=source_class
         )
         try:
-            for chunk in document["chunked_content"]:
+            for i, chunk in enumerate(document["chunked_content"]):
                 chunk = "passage: " + chunk
                 chunk_uuid = batch.add_data_object(
                     data_object={
@@ -89,16 +90,17 @@ def indexer(client: Client, data: dict, user_id: str):
                     },
                     class_name=content_class,
                 )
+                batch.add_reference(
+                    from_object_uuid=chunk_uuid,
+                    from_property_name="hasCategory",
+                    to_object_uuid=parent_uuid,
+                    from_object_class_name=content_class,
+                    to_object_class_name=source_class
+                )
+                print(f"[*] Added chunk no. {i} out of {total_chunks}")
         except Exception as e:
-            print("[!] Failed to index document: ", uri)
+            print("[!] Failed to index document: ", uri, e)
             print(chunk)
 
-            batch.add_reference(
-                from_object_uuid=chunk_uuid,
-                from_property_name="hasCategory",
-                to_object_uuid=parent_uuid,
-                from_object_class_name=content_class,
-                to_object_class_name=source_class
-            )
     print("[!] Indexed document: ", uri)
     return True
