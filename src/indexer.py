@@ -56,7 +56,7 @@ def indexer(client: Client, data: dict, user_id: str):
                     "description": "The source of the knowledge"
                 }
             ],
-            "vectorizer": "text2vec-huggingface",
+            "vectorizer": "text2vec-openai",
             "moduleConfig": {
                 "text2vec-openai": {
                     "model": "ada",
