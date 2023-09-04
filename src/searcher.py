@@ -8,8 +8,12 @@ from functools import lru_cache
 # no_schema_exception = HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="You haven't saved anything!")
 
 @lru_cache
-def get_failed_exception():
+def get_no_schema_failed_exception():
     return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="You haven't saved anything!")
+
+@lru_cache
+def get_failed_exception():
+    return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Something went wrong!")
 
 def searcher(query: str, user_id: str):
     client = get_weaviate_client()
@@ -47,5 +51,8 @@ def searcher(query: str, user_id: str):
 
         return results
     except KeyError as e:
+        print(e)
+        raise get_no_schema_failed_exception()()
+    except Exception as e:
         print(e)
         raise get_failed_exception()
