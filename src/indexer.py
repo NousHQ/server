@@ -1,4 +1,5 @@
 from config import settings
+from client import get_weaviate_client
 from weaviate import Client
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
@@ -9,7 +10,8 @@ def preprocess(document: dict):
     return texts
 
 
-def indexer(client: Client, data: dict, user_id: str):
+def indexer(data: dict, user_id: str):
+    client = get_weaviate_client()
     document = data["pageData"]
     title = document["title"]
     # uid = data["userData"]["userid"]
@@ -82,7 +84,7 @@ def indexer(client: Client, data: dict, user_id: str):
         )
         try:
             for i, chunk in enumerate(document["chunked_content"]):
-                # TODO: better wat to handle passage
+                # TODO: better way to handle passage
                 # chunk = "passage: " + chunk
                 chunk_uuid = batch.add_data_object(
                     data_object={

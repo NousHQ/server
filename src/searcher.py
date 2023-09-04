@@ -1,5 +1,5 @@
 from config import settings
-from weaviate import Client
+from client import get_weaviate_client
 from weaviate.gql.get import HybridFusion
 from weaviate.exceptions import UnexpectedStatusCodeException
 from fastapi import HTTPException, status
@@ -11,7 +11,8 @@ from functools import lru_cache
 def get_failed_exception():
     return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="You haven't saved anything!")
 
-def searcher(client: Client, query: str, user_id: str):
+def searcher(query: str, user_id: str):
+    client = get_weaviate_client()
     source_class = settings.KNOWLEDGE_SOURCE_CLASS.format(user_id)
     content_class = settings.CONTENT_CLASS.format(user_id)
     # TODO: better way to handle this

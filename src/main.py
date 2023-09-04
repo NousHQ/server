@@ -15,17 +15,6 @@ from indexer import indexer
 from searcher import searcher
 
 
-@lru_cache()
-def get_weaviate_client():
-    return weaviate.Client(
-        url=settings.WEAVIATE_URL,
-        auth_client_secret=weaviate.AuthApiKey(api_key=settings.WEAVIATE_API_KEY),
-        additional_headers={
-            "X-OpenAI-Api-Key": settings.OPENAI_API_KEY,
-            "X-Huggingface-Api-Key": settings.HUGGINGFACE_API_KEY
-        }
-    )
-
 app = FastAPI()
 
 origins = [
@@ -79,11 +68,10 @@ async def save(request: Request, background_tasks: BackgroundTasks, current_user
 
     async def save_data():
         try:
-            await run_in_threadpool(indexer, client=get_weaviate_client(), data=data, user_id=user_id)
+            await run_in_threadpool(indexer, data=data, user_id=user_id)
         except Exception as e:
             print(f"Error in saving data: {e}")
             # Optionally, you can also return an error response to the client or log the error.
-
 
     background_tasks.add_task(save_data)
 
@@ -94,5 +82,5 @@ async def save(request: Request, background_tasks: BackgroundTasks, current_user
 async def query(query: str, current_user: TokenData = Depends(get_current_user)):
     # response = searcher(query)
     user_id = current_user.sub.replace("-", "_")
-    results = searcher(client=get_weaviate_client(), query=query, user_id=user_id)
+    results = searcher(query=query, user_id=user_id)
     return {'query': query, 'results': results}
