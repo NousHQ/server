@@ -14,7 +14,8 @@ def get_failed_exception():
 def searcher(client: Client, query: str, user_id: str):
     source_class = settings.KNOWLEDGE_SOURCE_CLASS.format(user_id)
     content_class = settings.CONTENT_CLASS.format(user_id)
-    query = "query: " + query
+    # TODO: better way to handle this
+    # query = "query: " + query
     try:
         response = (
             client.query.get(

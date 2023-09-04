@@ -58,11 +58,10 @@ def indexer(client: Client, data: dict, user_id: str):
             ],
             "vectorizer": "text2vec-huggingface",
             "moduleConfig": {
-                "text2vec-huggingface": {
-                    "model": "intfloat/e5-large-v2",
-                    "options": {
-                        "waitForModel": True,
-                    }
+                "text2vec-openai": {
+                    "model": "ada",
+                    "modelVersion": "002",
+                    "type": "text",
                 }
             }
         }
@@ -83,7 +82,8 @@ def indexer(client: Client, data: dict, user_id: str):
         )
         try:
             for i, chunk in enumerate(document["chunked_content"]):
-                chunk = "passage: " + chunk
+                # TODO: better wat to handle passage
+                # chunk = "passage: " + chunk
                 chunk_uuid = batch.add_data_object(
                     data_object={
                         'source_content': chunk,
