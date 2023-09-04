@@ -59,7 +59,7 @@ def indexer(client: Client, data: dict, user_id: str):
             "vectorizer": "text2vec-huggingface",
             "moduleConfig": {
                 "text2vec-huggingface": {
-                    "model": "intfloat/e5-large",
+                    "model": "intfloat/e5-large-v2",
                     "options": {
                         "waitForModel": True,
                     }
@@ -80,14 +80,18 @@ def indexer(client: Client, data: dict, user_id: str):
             },
             class_name=source_class
         )
-        for chunk in document["chunked_content"]:
-            chunk = "passage: " + chunk
-            chunk_uuid = batch.add_data_object(
-                data_object={
-                    'source_content': chunk,
-                },
-                class_name=content_class,
-            )
+        try:
+            for chunk in document["chunked_content"]:
+                chunk = "passage: " + chunk
+                chunk_uuid = batch.add_data_object(
+                    data_object={
+                        'source_content': chunk,
+                    },
+                    class_name=content_class,
+                )
+        except Exception as e:
+            print("[!] Failed to index document: ", uri)
+            print(chunk)
 
             batch.add_reference(
                 from_object_uuid=chunk_uuid,
