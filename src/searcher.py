@@ -35,7 +35,7 @@ def searcher(query: str, user_id: str):
     except Exception as e:
         print(e)
         raise get_failed_exception()
-    
+
     if "data" not in response:
         raise get_no_schema_failed_exception()
 

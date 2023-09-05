@@ -72,7 +72,7 @@ def indexer(data: dict, user_id: str):
 
 
     print("[*] Indexing document: ", uri)
-    client.batch.configure(batch_size=50, num_workers=2)
+    client.batch.configure(batch_size=50, num_workers=1)
     with client.batch as batch:
         total_chunks = len(document["chunked_content"])
         parent_uuid = batch.add_data_object(
