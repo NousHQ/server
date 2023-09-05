@@ -13,7 +13,8 @@ def get_no_schema_failed_exception():
 
 @lru_cache
 def get_failed_exception():
-    return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Something went wrong!")
+    return HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Something went wrong!")
+
 
 def searcher(query: str, user_id: str):
     client = get_weaviate_client()
@@ -31,10 +32,13 @@ def searcher(query: str, user_id: str):
                 .with_autocut(1)
                 .do()
         )
-    except UnexpectedStatusCodeException as e:
+    except Exception as e:
         print(e)
         raise get_failed_exception()
-    print(response)
+    
+    if "data" not in response:
+        raise get_no_schema_failed_exception()
+
     results = []
     unique_uris_titles = set()
     try:
@@ -52,7 +56,7 @@ def searcher(query: str, user_id: str):
         return results
     except KeyError as e:
         print(e)
-        raise get_no_schema_failed_exception()()
+        raise get_no_schema_failed_exception()
     except Exception as e:
         print(e)
         raise get_failed_exception()

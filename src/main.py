@@ -60,6 +60,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 async def test(request: Request, current_user: TokenData = Depends(get_current_user)):
     return {"status": "ok"}
 
+
 @app.post("/api/save")
 async def save(request: Request, background_tasks: BackgroundTasks, current_user: TokenData = Depends(get_current_user)):
     user_id = current_user.sub.replace("-", "_")
