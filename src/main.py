@@ -69,8 +69,8 @@ async def save(request: Request, background_tasks: BackgroundTasks, current_user
     user_id = current_user.sub.replace("-", "_")
     data = await request.json()
     logger.info(f"{current_user.sub} is saving data")
-    if (indexer(data=data, user_id=user_id)):
-        return {"status": "ok"}
+    background_tasks.add_task(indexer, data=data, user_id=user_id)
+    return {"status": "ok"}
 
 
 @app.get("/api/search")

@@ -115,5 +115,5 @@ def indexer(data: dict, user_id: str):
             logger.error(f"Error {e} in indexing {uri} for {user_id}")
             raise get_failed_exception()
 
-    logger.info("Successfully saved {uri} for {user_id}")
+    logger.info(f"Successfully saved {uri} for {user_id}")
     return True
