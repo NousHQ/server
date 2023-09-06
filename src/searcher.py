@@ -8,7 +8,6 @@ from weaviate.gql.get import HybridFusion
 
 logger = get_logger(__name__)
 
-
 def searcher(query: str, user_id: str):
     client = get_weaviate_client()
     source_class = settings.KNOWLEDGE_SOURCE_CLASS.format(user_id)
@@ -30,7 +29,7 @@ def searcher(query: str, user_id: str):
         raise get_failed_exception()
 
     if "data" not in response:
-        logger.debug(f"{user_id} has no schema.")
+        logger.info(f"{user_id} has no schema.")
         raise get_no_schema_failed_exception()
 
     results = []
@@ -48,9 +47,6 @@ def searcher(query: str, user_id: str):
                 })
 
         return results
-    except KeyError as e:
-        logger.debug(f"{user_id} has no schema.")
-        raise get_no_schema_failed_exception()
     except Exception as e:
         logger.error(f"Error {e} in searching '{query}' for {user_id}: Couldn't parse response")
         raise get_failed_exception()

@@ -40,7 +40,7 @@ def indexer(data: dict, user_id: str):
         try:
             if not client.schema.exists(source_class):
                 print("[!] Schema doesn't exist. Initializing...")
-                logger.debug(f"Initializing {user_id} schema")
+                logger.info(f"Initializing {user_id} schema")
                 knowledge_source = {
                     "class": source_class,
                     "description": "A source saved by the user",
