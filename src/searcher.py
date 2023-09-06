@@ -27,12 +27,10 @@ def searcher(query: str, user_id: str):
         )
     except Exception as e:
         logger.error(f"Error {e} in searching '{query}' for {user_id}: Couldn't execute query")
-        print(response)
         raise get_failed_exception()
 
     if "data" not in response:
         logger.debug(f"{user_id} has no schema.")
-        print(response)
         raise get_no_schema_failed_exception()
 
     results = []
