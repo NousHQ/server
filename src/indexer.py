@@ -25,8 +25,8 @@ def indexer(data: dict, user_id: str):
 
     logger.info(f"{user_id} saving {uri}")
 
-    document["chunked_content"] = preprocess(document)
-    document["chunked_content"].append(title)
+    document["chunked_content"] = [title]
+    document["chunked_content"].extend(preprocess(document))
 
     # print("[*] Prepped document: ", uri)
 

@@ -21,4 +21,8 @@ def get_no_schema_failed_exception():
 
 @lru_cache
 def get_failed_exception():
-    return HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Something went wrong!")
+    return HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="")
+
+@lru_cache
+def get_bad_search_exception():
+    return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Couldn't search for that! It wasn't saved properly.")

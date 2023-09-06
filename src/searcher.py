@@ -1,6 +1,6 @@
 from config import settings
 from logger import get_logger
-from utils import get_no_schema_failed_exception, get_failed_exception
+from utils import get_no_schema_failed_exception, get_failed_exception, get_bad_search_exception
 
 from client import get_weaviate_client
 from weaviate.gql.get import HybridFusion
@@ -47,6 +47,11 @@ def searcher(query: str, user_id: str):
                 })
 
         return results
+
+    except TypeError as te:
+        logger.error(f"Error {te} in searching '{query}' for {user_id}: Content wasn't saved properly")
+        raise get_bad_search_exception()
+
     except Exception as e:
         logger.error(f"Error {e} in searching '{query}' for {user_id}: Couldn't parse response")
         raise get_failed_exception()
