@@ -1,10 +1,9 @@
-from weaviate import Client
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from logger import get_logger
 from config import settings
 from client import get_weaviate_client
-from utils import get_no_schema_failed_exception, get_failed_exception
+from utils import get_failed_exception
 
 
 logger = get_logger(__name__)
