@@ -8,11 +8,14 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi.concurrency import run_in_threadpool
 from jose import JWTError, jwt
 from pydantic import BaseModel
-import weaviate
 
 from config import settings
 from indexer import indexer
 from searcher import searcher
+from logger import get_logger
+
+
+logger = get_logger(__name__)
 
 
 app = FastAPI()
@@ -65,23 +68,15 @@ async def test(request: Request, current_user: TokenData = Depends(get_current_u
 async def save(request: Request, background_tasks: BackgroundTasks, current_user: TokenData = Depends(get_current_user)):
     user_id = current_user.sub.replace("-", "_")
     data = await request.json()
-    pprint(user_id)
-
-    async def save_data():
-        try:
-            await run_in_threadpool(indexer, data=data, user_id=user_id)
-        except Exception as e:
-            print(f"Error in saving data: {e}")
-            # Optionally, you can also return an error response to the client or log the error.
-
-    background_tasks.add_task(save_data)
-
-    return {"status": "ok"}
+    logger.info(f"{current_user.sub} is saving data")
+    if (indexer(data=data, user_id=user_id)):
+        return {"status": "ok"}
 
 
 @app.get("/api/search")
 async def query(query: str, current_user: TokenData = Depends(get_current_user)):
     # response = searcher(query)
+    logger.info(f"{current_user.sub} queried: {query}")
     user_id = current_user.sub.replace("-", "_")
     results = searcher(query=query, user_id=user_id)
     return {'query': query, 'results': results}

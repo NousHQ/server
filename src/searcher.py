@@ -1,19 +1,12 @@
 from config import settings
+from logger import get_logger
+from utils import get_no_schema_failed_exception, get_failed_exception
+
 from client import get_weaviate_client
 from weaviate.gql.get import HybridFusion
-from weaviate.exceptions import UnexpectedStatusCodeException
-from fastapi import HTTPException, status
-from functools import lru_cache
 
-# no_schema_exception = HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="You haven't saved anything!")
 
-@lru_cache
-def get_no_schema_failed_exception():
-    return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="You haven't saved anything!")
-
-@lru_cache
-def get_failed_exception():
-    return HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Something went wrong!")
+logger = get_logger(__name__)
 
 
 def searcher(query: str, user_id: str):
@@ -33,10 +26,11 @@ def searcher(query: str, user_id: str):
                 .do()
         )
     except Exception as e:
-        print(e)
+        logger.error(f"Error {e} in searching '{query}' for {user_id}")
         raise get_failed_exception()
 
     if "data" not in response:
+        logger.debug(f"{user_id} has no schema.")
         raise get_no_schema_failed_exception()
 
     results = []
@@ -55,8 +49,8 @@ def searcher(query: str, user_id: str):
 
         return results
     except KeyError as e:
-        print(e)
+        logger.debug(f"{user_id} has no schema.")
         raise get_no_schema_failed_exception()
     except Exception as e:
-        print(e)
+        logger.error(f"Error {e} in searching '{query}' for {user_id}")
         raise get_failed_exception()

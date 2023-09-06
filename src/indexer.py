@@ -1,7 +1,13 @@
-from config import settings
-from client import get_weaviate_client
 from weaviate import Client
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+from logger import get_logger
+from config import settings
+from client import get_weaviate_client
+from utils import get_no_schema_failed_exception, get_failed_exception
+
+
+logger = get_logger(__name__)
 
 
 def preprocess(document: dict):
@@ -14,9 +20,10 @@ def indexer(data: dict, user_id: str):
     client = get_weaviate_client()
     document = data["pageData"]
     title = document["title"]
-    # uid = data["userData"]["userid"]
-
     uri = document["url"]
+
+    logger.info(f"{user_id} saving {uri}")
+
     document["chunked_content"] = preprocess(document)
     document["chunked_content"].append(title)
 
@@ -27,62 +34,67 @@ def indexer(data: dict, user_id: str):
 
     if not client.schema.exists(source_class):
         print("[!] Schema doesn't exist. Initializing...")
-        knowledge_source = {
-            "class": source_class,
-            "description": "A source saved by the user",
-            "properties": [
-                {
-                    "name": "uri",
-                    "description": "The URI of the source",
-                    "dataType": ["text"],
-                },
-                {
-                    "name": "title",
-                    "description": "The title of the source",
-                    "dataType": ["text"]
-                }
-            ]
-        }
+        logger.debug(f"Initializing {user_id} schema")
+        try:
+            knowledge_source = {
+                "class": source_class,
+                "description": "A source saved by the user",
+                "properties": [
+                    {
+                        "name": "uri",
+                        "description": "The URI of the source",
+                        "dataType": ["text"],
+                    },
+                    {
+                        "name": "title",
+                        "description": "The title of the source",
+                        "dataType": ["text"]
+                    }
+                ]
+            }
 
-        content = {
-            "class": content_class,
-            "description": "The content of a source",
-            "properties": [
-                {
-                    "name": "source_content",
-                    "dataType": ["text"]
-                },
-                {
-                    "name": "hasCategory",
-                    "dataType": [source_class],
-                    "description": "The source of the knowledge"
-                }
-            ],
-            "vectorizer": "text2vec-openai",
-            "moduleConfig": {
-                "text2vec-openai": {
-                    "model": "ada",
-                    "modelVersion": "002",
-                    "type": "text",
+            content = {
+                "class": content_class,
+                "description": "The content of a source",
+                "properties": [
+                    {
+                        "name": "source_content",
+                        "dataType": ["text"]
+                    },
+                    {
+                        "name": "hasCategory",
+                        "dataType": [source_class],
+                        "description": "The source of the knowledge"
+                    }
+                ],
+                "vectorizer": "text2vec-openai",
+                "moduleConfig": {
+                    "text2vec-openai": {
+                        "model": "ada",
+                        "modelVersion": "002",
+                        "type": "text",
+                    }
                 }
             }
-        }
+            client.schema.create({"classes": [knowledge_source, content]})
 
-        client.schema.create({"classes": [knowledge_source, content]})
+        except Exception as e:
+            logger.error(f"Failed to initialize schema: {e} for {user_id}")
+            logger.error(f"Failed to save {uri} for {user_id}")
+            raise get_failed_exception()
 
 
-    print("[*] Indexing document: ", uri)
     client.batch.configure(batch_size=50, num_workers=1)
     with client.batch as batch:
         total_chunks = len(document["chunked_content"])
-        parent_uuid = batch.add_data_object(
-            data_object={
-                'uri': uri,
-                'title': title
-            },
-            class_name=source_class
-        )
         try:
+            parent_uuid = batch.add_data_object(
+                data_object={
+                    'uri': uri,
+                    'title': title
+                },
+                class_name=source_class
+            )
             for i, chunk in enumerate(document["chunked_content"]):
                 # TODO: better way to handle passage
                 # chunk = "passage: " + chunk
@@ -101,8 +113,8 @@ def indexer(data: dict, user_id: str):
                 )
                 # print(f"[*] Added chunk no. {i} out of {total_chunks}")
         except Exception as e:
-            print("[!] Failed to index document: ", uri, e)
-            print(chunk)
+            logger.error(f"Error {e} in indexing {uri} for {user_id}")
+            raise get_failed_exception()
 
-    print("[!] Indexed document: ", uri)
+    logger.info("Successfully saved {uri} for {user_id}")
     return True
