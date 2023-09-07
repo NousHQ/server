@@ -8,6 +8,9 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi.concurrency import run_in_threadpool
 from jose import JWTError, jwt
 from pydantic import BaseModel
+from aiofiles import open as aio_open
+import asyncio
+import json
 
 from config import settings
 from indexer import indexer
@@ -17,8 +20,10 @@ from logger import get_logger
 
 logger = get_logger(__name__)
 
-
 app = FastAPI()
+
+queue = asyncio.Queue()
+
 
 origins = [
     "https://app.nous.fyi"
@@ -59,6 +64,24 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     return user_data
 
 
+async def writer_worker():
+    """Asynchronous worker to handle writes."""
+    while True:
+        data, filename = await queue.get()  # Wait for an item from the queue
+        async with aio_open(filename, 'a') as f:
+            await f.write(json.dumps(data) + '\n')
+        queue.task_done()
+
+
+async def write_to_log(data: dict, filename: str = 'search_logs.json'):
+    await queue.put((data, filename))  # Just put the data in the queue and return immediately
+
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(writer_worker())
+
+
 @app.post("/api/healthcheck")
 async def test(request: Request, current_user: TokenData = Depends(get_current_user)):
     return {"status": "ok"}
@@ -78,5 +101,14 @@ async def query(query: str, current_user: TokenData = Depends(get_current_user))
     # response = searcher(query)
     logger.info(f"{current_user.sub} queried: {query}")
     user_id = current_user.sub.replace("-", "_")
-    results = searcher(query=query, user_id=user_id)
+    raw_response, results = searcher(query=query, user_id=user_id)
+
+    entry_dict = {
+        "user_id": user_id,
+        "query": query,
+        "response": raw_response
+    }
+
+    await write_to_log(entry_dict)
+
     return {'query': query, 'results': results}

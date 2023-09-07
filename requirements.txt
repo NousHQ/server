@@ -5,3 +5,4 @@ weaviate-client
 python-jose
 langchain
 uvicorn
+aiofiles

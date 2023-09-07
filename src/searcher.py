@@ -4,7 +4,7 @@ from utils import get_no_schema_failed_exception, get_failed_exception, get_bad_
 
 from client import get_weaviate_client
 from weaviate.gql.get import HybridFusion
-
+import json
 
 logger = get_logger(__name__)
 
@@ -46,7 +46,7 @@ def searcher(query: str, user_id: str):
                     "title": r["hasCategory"][0]["title"],
                 })
 
-        return results
+        return response, results
 
     except TypeError as te:
         logger.error(f"Error {te} in searching '{query}' for {user_id}: Content wasn't saved properly")
@@ -55,3 +55,12 @@ def searcher(query: str, user_id: str):
     except Exception as e:
         logger.error(f"Error {e} in searching '{query}' for {user_id}: Couldn't parse response")
         raise get_failed_exception()
+
+
+def log_search(user_id, query, response):
+    with open("query_logs.json", "a") as fd:
+        entry_dict = {"user_id": user_id,
+                      "query": query,
+                      "response": response}
+        entry = json.dumps(entry_dict)
+        fd.write(entry + "\n")
