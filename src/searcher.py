@@ -56,11 +56,3 @@ def searcher(query: str, user_id: str):
         logger.error(f"Error {e} in searching '{query}' for {user_id}: Couldn't parse response")
         raise get_failed_exception()
 
-
-def log_search(user_id, query, response):
-    with open("query_logs.json", "a") as fd:
-        entry_dict = {"user_id": user_id,
-                      "query": query,
-                      "response": response}
-        entry = json.dumps(entry_dict)
-        fd.write(entry + "\n")
