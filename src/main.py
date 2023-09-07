@@ -115,7 +115,7 @@ async def query(query: str, current_user: TokenData = Depends(get_current_user))
 
 
 @app.get("/api/sources/saved")
-async def allSaved(current_user: TokenData = Depends(get_current_user())):
+async def allSaved(current_user: TokenData = Depends(get_current_user)):
     logger.info(f"sending all saved to {current_user.sub}")
     user_id = current_user.sub.replace("-", "_")
     source_class = settings.KNOWLEDGE_SOURCE_CLASS.format(user_id)
