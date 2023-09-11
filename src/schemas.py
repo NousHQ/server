@@ -52,5 +52,5 @@ class WebhookRequestSchema(BaseModel):
     type: str
     table: str
     record: Record
-    schema: str
+    schema_name: str
     old_record: Optional[Record] = None
