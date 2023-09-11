@@ -73,6 +73,9 @@ def indexer(data: dict, user_id: str):
                     ],
                     "vectorizer": "text2vec-huggingface",
                     "moduleConfig": {
+                        "reranker-cohere": {
+                            "model": "rerank-english-v2.0"
+                        },
                         "text2vec-huggingface": {
                             "model": "intfloat/e5-large-v2",
                             "options": {
