@@ -7,7 +7,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.concurrency import run_in_threadpool
 from jose import JWTError, jwt
-from pydantic import BaseModel
 from aiofiles import open as aio_open
 import asyncio
 import json
