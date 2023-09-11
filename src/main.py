@@ -17,6 +17,8 @@ from indexer import indexer
 from searcher import searcher
 from logger import get_logger
 from client import get_weaviate_client
+from schemas import TokenData, Record, WebhookRequestSchema
+from utils import get_current_user
 
 logger = get_logger(__name__)
 
@@ -36,32 +38,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-SECRET_KEY = settings.SUPABASE_SECRET
-ALGORITHM = "HS256"
-
-class TokenData(BaseModel):
-    aud: str
-    exp: int
-    iat: int
-    iss: str
-    sub: str
-    email: Optional[str] = None
-    role: Optional[str] = None
-
-
-def get_current_user(token: str = Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN, detail="Could not validate credentials"
-    )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM], audience="authenticated")
-        user_data = TokenData(**payload)
-    except JWTError:
-        raise credentials_exception
-    return user_data
 
 
 async def writer_worker():
@@ -83,8 +59,8 @@ async def startup_event():
 
 
 @app.post("/api/init_schema")
-async def init_schema(request: Request):
-    print(request.json())
+async def init_schema(webhookData: WebhookRequestSchema):
+    print(webhookData)
 
 
 @app.post("/api/healthcheck")

@@ -1,7 +1,10 @@
 import weaviate
 from functools import lru_cache
 from config import settings
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Depends
+from jose import JWTError, jwt
+from fastapi.security import OAuth2PasswordBearer
+from schemas import TokenData
 # from sentence_transformers import SentenceTransformer
 
 @lru_cache()
@@ -27,6 +30,20 @@ def get_failed_exception():
 @lru_cache
 def get_bad_search_exception():
     return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Couldn't search for that! It wasn't saved properly.")
+
+
+@lru_cache()
+def get_current_user(token: str = Depends(OAuth2PasswordBearer(tokenUrl="token"))):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN, detail="Could not validate credentials"
+    )
+    try:
+        payload = jwt.decode(token, settings.SUPABASE_SECRET, algorithms=["HS256"], audience="authenticated")
+        user_data = TokenData(**payload)
+    except JWTError:
+        raise credentials_exception
+    return user_data
+
 
 # @lru_cache
 # def get_model():
