@@ -7,12 +7,11 @@ from config import settings
 from client import get_weaviate_client
 from utils import get_failed_exception
 
-
 logger = get_logger(__name__)
 
 
 def preprocess(document: dict):
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=512)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=2500)
     texts = text_splitter.split_text(document["content"])
     return texts
 
@@ -72,14 +71,23 @@ def indexer(data: dict, user_id: str):
                             "description": "The source of the knowledge"
                         }
                     ],
-                    "vectorizer": "text2vec-openai",
+                    "vectorizer": "text2vec-huggingface",
                     "moduleConfig": {
-                        "text2vec-openai": {
-                            "model": "ada",
-                            "modelVersion": "002",
-                            "type": "text",
+                        "text2vec-huggingface": {
+                            "model": "intfloat/e5-large-v2",
+                            "options": {
+                                "waitForModel": "true"
+                            }
                         }
                     }
+                    # "vectorizer": "text2vec-openai",
+                    # "moduleConfig": {
+                    #     "text2vec-openai": {
+                    #         "model": "ada",
+                    #         "modelVersion": "002",
+                    #         "type": "text",
+                    #     }
+                    # }
                 }
                 client.schema.create({"classes": [knowledge_source, content]})
             break
@@ -95,7 +103,6 @@ def indexer(data: dict, user_id: str):
 
     client.batch.configure(batch_size=50, num_workers=1)
     with client.batch as batch:
-        total_chunks = len(document["chunked_content"])
         try:
             parent_uuid = batch.add_data_object(
                 data_object={
@@ -106,7 +113,7 @@ def indexer(data: dict, user_id: str):
             )
             for i, chunk in enumerate(document["chunked_content"]):
                 # TODO: better way to handle passage
-                # chunk = "passage: " + chunk
+                chunk = "passage: " + chunk
                 chunk_uuid = batch.add_data_object(
                     data_object={
                         'source_content': chunk,
@@ -120,7 +127,6 @@ def indexer(data: dict, user_id: str):
                     from_object_class_name=content_class,
                     to_object_class_name=source_class
                 )
-                # print(f"[*] Added chunk no. {i} out of {total_chunks}")
         except Exception as e:
             logger.error(f"Error {e} in indexing {uri} for {user_id}")
             raise get_failed_exception()
