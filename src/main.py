@@ -82,6 +82,11 @@ async def startup_event():
     asyncio.create_task(writer_worker())
 
 
+@app.post("/api/init_schema")
+async def init_schema(request: Request):
+    print(request.json())
+
+
 @app.post("/api/healthcheck")
 async def test(request: Request, current_user: TokenData = Depends(get_current_user)):
     return {"status": "ok"}
@@ -114,7 +119,7 @@ async def query(query: str, current_user: TokenData = Depends(get_current_user))
     return {'query': query, 'results': results}
 
 
-@app.get("/api/sources/saved")
+@app.get("/api/all_saved")
 async def allSaved(current_user: TokenData = Depends(get_current_user)):
     logger.info(f"sending all saved to {current_user.sub}")
     user_id = current_user.sub.replace("-", "_")
