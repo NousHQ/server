@@ -23,15 +23,15 @@ def searcher(query: str, user_id: str):
                 .with_hybrid(query=query, alpha=0.75, fusion_type=HybridFusion.RELATIVE_SCORE)
                 # .with_additional("score")
                 .with_additional('rerank(property: "source_content", query: "{}") {{ score }}'.format(query))
-                .with_autocut(1)
+                .with_autocut(2)
                 .do()
         )
     except Exception as e:
         logger.error(f"Error {e} in searching '{query}' for {user_id}: Couldn't execute query")
         raise get_failed_exception()
 
-    if "data" not in response:
-        logger.info(f"{user_id} has no schema.")
+    if "errors" not in response:
+        logger.info(f"{user_id} error in querying: {response}")
         raise get_no_schema_failed_exception()
 
     results = []
@@ -40,18 +40,21 @@ def searcher(query: str, user_id: str):
         for i, r in enumerate(response["data"]["Get"][content_class]):
             uri = r["hasCategory"][0]["uri"]
             title = r["hasCategory"][0]["title"]
+            score = r["_additional"]["rerank"]["score"]
+            if score < 0.18:
+                continue
             if (uri, title) not in unique_uris_titles:
                 unique_uris_titles.add((uri, title))
                 results.append({
                     "index": i,
-                    "uri": r["hasCategory"][0]["uri"],
-                    "title": r["hasCategory"][0]["title"],
+                    "uri": uri,
+                    "title": title,
                 })
 
         return response, results
 
     except TypeError as te:
-        logger.error(f"Error {te} in searching '{query}' for {user_id}: Content wasn't saved properly")
+        logger.error(f"Error {te} in searching '{query}' for {user_id}")
         raise get_bad_search_exception()
 
     except Exception as e:
