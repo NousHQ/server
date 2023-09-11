@@ -30,7 +30,7 @@ def searcher(query: str, user_id: str):
         logger.error(f"Error {e} in searching '{query}' for {user_id}: Couldn't execute query")
         raise get_failed_exception()
 
-    if "errors" not in response:
+    if "errors" in response:
         logger.info(f"{user_id} error in querying: {response}")
         raise get_no_schema_failed_exception()
 
