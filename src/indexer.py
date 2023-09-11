@@ -71,24 +71,24 @@ def indexer(data: dict, user_id: str):
                             "description": "The source of the knowledge"
                         }
                     ],
-                    "vectorizer": "text2vec-huggingface",
+                    # "vectorizer": "text2vec-huggingface",
+                    "vectorizer": "text2vec-openai",
                     "moduleConfig": {
                         "reranker-cohere": {
                             "model": "rerank-english-v2.0"
                         },
-                        "text2vec-huggingface": {
-                            "model": "intfloat/e5-large-v2",
-                            "options": {
-                                "waitForModel": "true"
-                            }
+                        "text2vec-openai": {
+                            "model": "ada",
+                            "modelVersion": "002",
+                            "type": "text"
+                        # "text2vec-huggingface": {
+                        #     "model": "intfloat/e5-large-v2",
+                        #     "options": {
+                        #         "waitForModel": "true"
+                        #     },
                         }
                     }
-                    # "vectorizer": "text2vec-openai",
                     # "moduleConfig": {
-                    #     "text2vec-openai": {
-                    #         "model": "ada",
-                    #         "modelVersion": "002",
-                    #         "type": "text",
                     #     }
                     # }
                 }
@@ -116,7 +116,7 @@ def indexer(data: dict, user_id: str):
             )
             for i, chunk in enumerate(document["chunked_content"]):
                 # TODO: better way to handle passage
-                chunk = "passage: " + chunk
+                # chunk = "passage: " + chunk
                 chunk_uuid = batch.add_data_object(
                     data_object={
                         'source_content': chunk,
