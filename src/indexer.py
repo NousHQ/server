@@ -11,7 +11,7 @@ logger = get_logger(__name__)
 
 
 def preprocess(document: dict):
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=2500)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1024)
     texts = text_splitter.split_text(document["content"])
     return texts
 
