@@ -60,7 +60,7 @@ async def startup_event():
 
 @app.post("/api/init_schema")
 async def init_schema(webhookData: WebhookRequestSchema):
-    print(webhookData)
+    print(webhookData.model_dump())
 
 
 @app.post("/api/healthcheck")
