@@ -40,7 +40,7 @@ def searcher(query: str, user_id: str):
         for i, r in enumerate(response["data"]["Get"][content_class]):
             uri = r["hasCategory"][0]["uri"]
             title = r["hasCategory"][0]["title"]
-            score = r["_additional"]["rerank"]["score"]
+            score = r["_additional"]["rerank"][0]["score"]
             if score < 0.18:
                 continue
             if (uri, title) not in unique_uris_titles:
