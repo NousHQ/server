@@ -17,7 +17,7 @@ from searcher import searcher
 from logger import get_logger
 from client import get_weaviate_client
 from schemas import TokenData, Record, WebhookRequestSchema
-from utils import get_current_user
+from utils import get_current_user, convert_user_id, get_weaviate_schemas
 
 logger = get_logger(__name__)
 
@@ -59,7 +59,12 @@ async def startup_event():
 
 @app.post("/api/init_schema")
 async def init_schema(webhookData: WebhookRequestSchema):
-    print(webhookData.model_dump())
+    user_id = convert_user_id(webhookData.record.id)
+    knowledge_source, content = get_weaviate_schemas(user_id)
+    client = get_weaviate_client()
+    client.schema.create({"classes": [knowledge_source, content]})
+    logger.info(f"New schema initialized for user {user_id}")
+
 
 
 @app.post("/api/healthcheck")
@@ -69,7 +74,7 @@ async def test(request: Request, current_user: TokenData = Depends(get_current_u
 
 @app.post("/api/save")
 async def save(request: Request, background_tasks: BackgroundTasks, current_user: TokenData = Depends(get_current_user)):
-    user_id = current_user.sub.replace("-", "_")
+    user_id = convert_user_id(current_user.sub)
     data = await request.json()
     logger.info(f"{current_user.sub} is saving data")
     background_tasks.add_task(indexer, data=data, user_id=user_id)
@@ -80,7 +85,7 @@ async def save(request: Request, background_tasks: BackgroundTasks, current_user
 async def query(query: str, current_user: TokenData = Depends(get_current_user)):
     # response = searcher(query)
     logger.info(f"{current_user.sub} queried: {query}")
-    user_id = current_user.sub.replace("-", "_")
+    user_id = convert_user_id(current_user.sub)
     raw_response, results = searcher(query=query, user_id=user_id)
 
     entry_dict = {
@@ -97,7 +102,7 @@ async def query(query: str, current_user: TokenData = Depends(get_current_user))
 @app.get("/api/all_saved")
 async def allSaved(current_user: TokenData = Depends(get_current_user)):
     logger.info(f"sending all saved to {current_user.sub}")
-    user_id = current_user.sub.replace("-", "_")
+    user_id = convert_user_id(current_user.sub)
     source_class = settings.KNOWLEDGE_SOURCE_CLASS.format(user_id)
     client = get_weaviate_client()
     response = client.query.get(source_class, ["title", "uri"]).do()

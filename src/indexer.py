@@ -27,81 +27,28 @@ def indexer(data: dict, user_id: str):
     document["chunked_content"] = [title]
     document["chunked_content"].extend(preprocess(document))
 
-    # print("[*] Prepped document: ", uri)
-
     source_class = settings.KNOWLEDGE_SOURCE_CLASS.format(user_id)
     content_class = settings.CONTENT_CLASS.format(user_id)
 
-    MAX_RETRIES = 5
-    RETRY_DELAY = 2
-    retry_count = 0
-    while retry_count < MAX_RETRIES:
-        try:
-            if not client.schema.exists(source_class):
-                print("[!] Schema doesn't exist. Initializing...")
-                logger.info(f"Initializing {user_id} schema")
-                knowledge_source = {
-                    "class": source_class,
-                    "description": "A source saved by the user",
-                    "properties": [
-                        {
-                            "name": "uri",
-                            "description": "The URI of the source",
-                            "dataType": ["text"],
-                        },
-                        {
-                            "name": "title",
-                            "description": "The title of the source",
-                            "dataType": ["text"]
-                        }
-                    ]
-                }
-
-                content = {
-                    "class": content_class,
-                    "description": "The content of a source",
-                    "properties": [
-                        {
-                            "name": "source_content",
-                            "dataType": ["text"]
-                        },
-                        {
-                            "name": "hasCategory",
-                            "dataType": [source_class],
-                            "description": "The source of the knowledge"
-                        }
-                    ],
-                    # "vectorizer": "text2vec-huggingface",
-                    "vectorizer": "text2vec-openai",
-                    "moduleConfig": {
-                        "reranker-cohere": {
-                            "model": "rerank-english-v2.0"
-                        },
-                        "text2vec-openai": {
-                            "model": "ada",
-                            "modelVersion": "002",
-                            "type": "text"
-                        # "text2vec-huggingface": {
-                        #     "model": "intfloat/e5-large-v2",
-                        #     "options": {
-                        #         "waitForModel": "true"
-                        #     },
-                        }
-                    }
-                    # "moduleConfig": {
-                    #     }
-                    # }
-                }
-                client.schema.create({"classes": [knowledge_source, content]})
-            break
-        except RequestException.exceptions.ConnectionError as e:
-            logger.error(f"Connection error: checking {user_id} schema")
-            time.sleep(RETRY_DELAY)
-            retry_count += 1
+    # MAX_RETRIES = 5
+    # RETRY_DELAY = 2
+    # retry_count = 0
+    # while retry_count < MAX_RETRIES:
+    #     try:
+    #         if not client.schema.exists(source_class):
+    #             print("[!] Schema doesn't exist. Initializing...")
+    #             logger.info(f"Initializing {user_id} schema")
+                
+    #             client.schema.create({"classes": [knowledge_source, content]})
+    #         break
+    #     except RequestException.exceptions.ConnectionError as e:
+    #         logger.error(f"Connection error: checking {user_id} schema")
+    #         time.sleep(RETRY_DELAY)
+    #         retry_count += 1
     
-    if retry_count == MAX_RETRIES:
-        logger.error(f"Failed to initialize schema for {user_id}")
-        raise get_failed_exception()
+    # if retry_count == MAX_RETRIES:
+    #     logger.error(f"Failed to initialize schema for {user_id}")
+    #     raise get_failed_exception()
 
 
     client.batch.configure(batch_size=50, num_workers=1)

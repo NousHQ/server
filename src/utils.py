@@ -32,7 +32,7 @@ def get_bad_search_exception():
     return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Couldn't search for that! It wasn't saved properly.")
 
 
-@lru_cache()
+@lru_cache
 def get_current_user(token: str = Depends(OAuth2PasswordBearer(tokenUrl="token"))):
     credentials_exception = HTTPException(
         status_code=status.HTTP_403_FORBIDDEN, detail="Could not validate credentials"
@@ -45,6 +45,63 @@ def get_current_user(token: str = Depends(OAuth2PasswordBearer(tokenUrl="token")
     return user_data
 
 
-# @lru_cache
-# def get_model():
-#     return SentenceTransformer('intfloat/e5-large-v2')
+@lru_cache
+def convert_user_id(user_id: str):
+    if "-" in user_id:
+        return user_id.replace("-", "_")
+    elif "_" in user_id:
+        return user_id.replace("_", "-")
+    else:
+        return user_id
+
+
+@lru_cache
+def get_weaviate_schemas(user_id):
+    source_class = settings.KNOWLEDGE_SOURCE_CLASS.format(user_id)
+    content_class = settings.CONTENT_CLASS.format(user_id)
+    
+    knowledge_source = {
+        "class": source_class,
+        "description": "A source saved by the user",
+        "properties": [
+            {
+                "name": "uri",
+                "description": "The URI of the source",
+                "dataType": ["text"],
+            },
+            {
+                "name": "title",
+                "description": "The title of the source",
+                "dataType": ["text"]
+            }
+        ]
+    }
+
+    content = {
+        "class": content_class,
+        "description": "The content of a source",
+        "properties": [
+            {
+                "name": "source_content",
+                "dataType": ["text"]
+            },
+            {
+                "name": "hasCategory",
+                "dataType": [source_class],
+                "description": "The source of the knowledge"
+            }
+        ],
+        "vectorizer": "text2vec-openai",
+        "moduleConfig": {
+            "reranker-cohere": {
+                "model": "rerank-english-v2.0"
+            },
+            "text2vec-openai": {
+                "model": "ada",
+                "modelVersion": "002",
+                "type": "text"
+            }
+        }
+    }
+
+    return knowledge_source, content
