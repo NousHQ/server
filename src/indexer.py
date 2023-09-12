@@ -1,6 +1,5 @@
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from requests import RequestException
-import time
 
 from logger import get_logger
 from config import settings
@@ -30,28 +29,7 @@ def indexer(data: dict, user_id: str):
     source_class = settings.KNOWLEDGE_SOURCE_CLASS.format(user_id)
     content_class = settings.CONTENT_CLASS.format(user_id)
 
-    # MAX_RETRIES = 5
-    # RETRY_DELAY = 2
-    # retry_count = 0
-    # while retry_count < MAX_RETRIES:
-    #     try:
-    #         if not client.schema.exists(source_class):
-    #             print("[!] Schema doesn't exist. Initializing...")
-    #             logger.info(f"Initializing {user_id} schema")
-                
-    #             client.schema.create({"classes": [knowledge_source, content]})
-    #         break
-    #     except RequestException.exceptions.ConnectionError as e:
-    #         logger.error(f"Connection error: checking {user_id} schema")
-    #         time.sleep(RETRY_DELAY)
-    #         retry_count += 1
-    
-    # if retry_count == MAX_RETRIES:
-    #     logger.error(f"Failed to initialize schema for {user_id}")
-    #     raise get_failed_exception()
-
-
-    client.batch.configure(batch_size=50, num_workers=1)
+    client.batch.configure(batch_size=50, num_workers=1, dynamic=True, timeout_retries=3, connection_error_retries=3, weaviate_error_retries=3)
     with client.batch as batch:
         try:
             parent_uuid = batch.add_data_object(

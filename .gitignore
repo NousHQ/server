@@ -2,3 +2,9 @@ src/**/__pycache__/
 .venv/
 nous.log
 search_logs.json
+supabase/
+notebooks/
+model-e5/
+model_cache/
+Pipfile
+Pipfile.lock
