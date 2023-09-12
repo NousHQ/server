@@ -15,7 +15,7 @@ from config import settings
 from indexer import indexer
 from searcher import searcher
 from logger import get_logger
-from client import get_weaviate_client
+from client import indexer_weaviate_client, searcher_weaviate_client
 from schemas import TokenData, Record, WebhookRequestSchema
 from utils import get_current_user, convert_user_id, get_weaviate_schemas
 
@@ -61,7 +61,7 @@ async def startup_event():
 async def init_schema(webhookData: WebhookRequestSchema, background_tasks: BackgroundTasks):
     user_id = convert_user_id(webhookData.record.id)
     knowledge_source, content = get_weaviate_schemas(user_id)
-    client = get_weaviate_client()
+    client = indexer_weaviate_client()
     client.schema.create({"classes": [knowledge_source, content]})
     logger.info(f"New schema initialized for user {user_id}")
     with open("presaved.json", "r") as f:
@@ -110,7 +110,7 @@ async def allSaved(current_user: TokenData = Depends(get_current_user)):
     logger.info(f"sending all saved to {current_user.sub}")
     user_id = convert_user_id(current_user.sub)
     source_class = settings.KNOWLEDGE_SOURCE_CLASS.format(user_id)
-    client = get_weaviate_client()
+    client = searcher_weaviate_client()
     response = client.query.get(source_class, ["title", "uri"]).do()
     results = []
     for i, source in enumerate(response['data']['Get'][source_class]):

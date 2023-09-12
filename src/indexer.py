@@ -3,7 +3,7 @@ from requests import RequestException
 
 from logger import get_logger
 from config import settings
-from client import get_weaviate_client
+from client import indexer_weaviate_client
 from utils import get_failed_exception
 
 logger = get_logger(__name__)
@@ -16,7 +16,7 @@ def preprocess(document: dict):
 
 
 def indexer(data: dict, user_id: str):
-    client = get_weaviate_client()
+    client = indexer_weaviate_client()
     document = data["pageData"]
     title = document["title"]
     uri = document["url"]
