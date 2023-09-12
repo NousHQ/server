@@ -2,7 +2,6 @@ import weaviate
 from functools import lru_cache
 from config import settings
 
-@lru_cache()
 def get_weaviate_client():
     return weaviate.Client(
         url=settings.WEAVIATE_URL,

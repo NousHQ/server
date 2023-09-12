@@ -72,7 +72,6 @@ async def init_schema(webhookData: WebhookRequestSchema, background_tasks: Backg
     return {"user_id": webhookData.record.id, "status": "schema_initialised"}
 
 
-
 @app.post("/api/healthcheck")
 async def test(request: Request, current_user: TokenData = Depends(get_current_user)):
     return {"status": "ok"}
@@ -82,6 +81,7 @@ async def test(request: Request, current_user: TokenData = Depends(get_current_u
 async def save(request: Request, background_tasks: BackgroundTasks, current_user: TokenData = Depends(get_current_user)):
     user_id = convert_user_id(current_user.sub)
     data = await request.json()
+    # TODO: Validate the request
     logger.info(f"{current_user.sub} is saving data")
     background_tasks.add_task(indexer, data=data, user_id=user_id)
     return {"status": "ok"}

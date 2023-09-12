@@ -29,7 +29,7 @@ def indexer(data: dict, user_id: str):
     source_class = settings.KNOWLEDGE_SOURCE_CLASS.format(user_id)
     content_class = settings.CONTENT_CLASS.format(user_id)
 
-    client.batch.configure(batch_size=50, num_workers=1, dynamic=True, timeout_retries=3, connection_error_retries=3, weaviate_error_retries=3)
+    client.batch.configure(batch_size=50, num_workers=1, timeout_retries=3, connection_error_retries=3)
     with client.batch as batch:
         try:
             parent_uuid = batch.add_data_object(
