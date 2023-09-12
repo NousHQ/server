@@ -64,6 +64,7 @@ async def init_schema(webhookData: WebhookRequestSchema):
     client = get_weaviate_client()
     client.schema.create({"classes": [knowledge_source, content]})
     logger.info(f"New schema initialized for user {user_id}")
+    return {"user_id": webhookData.record.id, "status": "schema_initialised"}
 
 
 
