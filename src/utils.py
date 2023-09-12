@@ -21,7 +21,7 @@ def get_weaviate_client():
 
 @lru_cache
 def get_no_schema_failed_exception():
-    return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="You haven't saved anything!")
+    return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Your search did not match any documents.")
 
 @lru_cache
 def get_failed_exception():
