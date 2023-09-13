@@ -5,6 +5,7 @@ from logger import get_logger
 from config import settings
 from client import indexer_weaviate_client
 from utils import get_failed_exception
+from redis import StrictRedis
 
 logger = get_logger(__name__)
 
@@ -15,7 +16,7 @@ def preprocess(document: dict):
     return texts
 
 
-def indexer(data: dict, user_id: str):
+def indexer(data: dict, user_id: str, r_conn: StrictRedis):
     client = indexer_weaviate_client()
     document = data["pageData"]
     title = document["title"]
@@ -29,35 +30,36 @@ def indexer(data: dict, user_id: str):
     source_class = settings.KNOWLEDGE_SOURCE_CLASS.format(user_id)
     content_class = settings.CONTENT_CLASS.format(user_id)
 
-    client.batch.configure(batch_size=50, num_workers=1, timeout_retries=3, connection_error_retries=3)
-    with client.batch as batch:
-        try:
-            parent_uuid = batch.add_data_object(
-                data_object={
-                    'uri': uri,
-                    'title': title
-                },
-                class_name=source_class
-            )
-            for i, chunk in enumerate(document["chunked_content"]):
-                # TODO: better way to handle passage
-                # chunk = "passage: " + chunk
-                chunk_uuid = batch.add_data_object(
+    try:
+        client.batch.configure(batch_size=50, num_workers=1, timeout_retries=3, connection_error_retries=3)
+        with client.batch as batch:
+                parent_uuid = batch.add_data_object(
                     data_object={
-                        'source_content': chunk,
+                        'uri': uri,
+                        'title': title
                     },
-                    class_name=content_class,
+                    class_name=source_class
                 )
-                batch.add_reference(
-                    from_object_uuid=chunk_uuid,
-                    from_property_name="hasCategory",
-                    to_object_uuid=parent_uuid,
-                    from_object_class_name=content_class,
-                    to_object_class_name=source_class
-                )
-        except Exception as e:
-            logger.error(f"Error {e} in indexing {uri} for {user_id}")
-            raise get_failed_exception()
+                for i, chunk in enumerate(document["chunked_content"]):
+                    # TODO: better way to handle passage
+                    # chunk = "passage: " + chunk
+                    chunk_uuid = batch.add_data_object(
+                        data_object={
+                            'source_content': chunk,
+                        },
+                        class_name=content_class,
+                    )
+                    batch.add_reference(
+                        from_object_uuid=chunk_uuid,
+                        from_property_name="hasCategory",
+                        to_object_uuid=parent_uuid,
+                        from_object_class_name=content_class,
+                        to_object_class_name=source_class
+                    )
+    except Exception as e:
+        logger.error(f"Error {e} in indexing {uri} for {user_id}")
+        raise get_failed_exception()
 
+    r_conn.sadd(f"user:{user_id}", uri)
     logger.info(f"Successfully saved {uri} for {user_id}")
     return True

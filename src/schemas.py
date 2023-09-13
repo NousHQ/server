@@ -54,3 +54,13 @@ class WebhookRequestSchema(BaseModel):
     record: Record
     schema: str
     record: Optional[Record] = None
+
+
+class PageData(BaseModel):
+    url: str
+    title: str
+    content: str
+
+
+class SaveRequest(BaseModel):
+    pageData: PageData

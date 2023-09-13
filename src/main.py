@@ -15,16 +15,13 @@ from config import settings
 from indexer import indexer
 from searcher import searcher
 from logger import get_logger
-from client import indexer_weaviate_client, searcher_weaviate_client
-from schemas import TokenData, Record, WebhookRequestSchema
+from client import indexer_weaviate_client, searcher_weaviate_client, get_redis_connection
+from schemas import TokenData, WebhookRequestSchema, SaveRequest
 from utils import get_current_user, convert_user_id, get_weaviate_schemas
 
 logger = get_logger(__name__)
 
 app = FastAPI()
-
-queue = asyncio.Queue()
-
 
 origins = [
     "https://app.nous.fyi"
@@ -37,6 +34,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+queue = asyncio.Queue()
 
 
 async def writer_worker():
@@ -78,19 +77,25 @@ async def test(request: Request, current_user: TokenData = Depends(get_current_u
 
 
 @app.post("/api/save")
-async def save(request: Request, background_tasks: BackgroundTasks, current_user: TokenData = Depends(get_current_user)):
+async def save(saveRequest: SaveRequest, background_tasks: BackgroundTasks, current_user: TokenData = Depends(get_current_user)):
+    r = get_redis_connection()
     user_id = convert_user_id(current_user.sub)
-    data = await request.json()
-    # TODO: Validate the request
-    logger.info(f"{current_user.sub} is saving data")
-    background_tasks.add_task(indexer, data=data, user_id=user_id)
+    r_key = f"user:{user_id}"
+    if r.sismember(r_key, saveRequest.pageData.url):
+        logger.info(f"{user_id} already saved {saveRequest.pageData.url}")
+        return {"status": "ok"}
+
+    data = saveRequest.model_dump()
+    background_tasks.add_task(indexer, data=data, user_id=user_id, r_conn=r)
+    logger.info(f"{user_id} is saving data")
     return {"status": "ok"}
 
 
 @app.get("/api/search")
 async def query(query: str, current_user: TokenData = Depends(get_current_user)):
     # response = searcher(query)
-    logger.info(f"{current_user.sub} queried: {query}")
+    user_id = convert_user_id(current_user.sub)
+    logger.info(f"{user_id} queried: {query}")
     user_id = convert_user_id(current_user.sub)
     raw_response, results = searcher(query=query, user_id=user_id)
 

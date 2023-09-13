@@ -1,6 +1,7 @@
 import weaviate
 from functools import lru_cache
 from config import settings
+import redis
 
 def indexer_weaviate_client():
     return weaviate.Client(
@@ -24,3 +25,7 @@ def searcher_weaviate_client():
             "X-Cohere-Api-Key": settings.COHERE_API_KEY
         }
     )
+
+
+def get_redis_connection():
+    return redis.StrictRedis(host='localhost', port=6379, db=0)

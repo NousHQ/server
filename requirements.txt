@@ -6,3 +6,4 @@ python-jose
 langchain
 uvicorn
 aiofiles
+redis
