@@ -1,5 +1,5 @@
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from requests import RequestException
+from urllib.parse import urlparse
 
 from logger import get_logger
 from config import settings
@@ -20,7 +20,12 @@ def indexer(data: dict, user_id: str, r_conn: StrictRedis):
     client = indexer_weaviate_client()
     document = data["pageData"]
     title = document["title"]
+    
+    # Cleaning fragments
+    # https://example.com/#acevvsw vs https://example.com/ should be same
     uri = document["url"]
+    parsed_uri = urlparse(uri)
+    uri = parsed_uri._replace(fragment="").geturl()
 
     logger.info(f"{user_id} saving {uri}")
 
