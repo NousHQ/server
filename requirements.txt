@@ -7,3 +7,4 @@ langchain
 uvicorn
 aiofiles
 redis
+sentry-sdk[fastapi]

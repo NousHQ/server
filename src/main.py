@@ -1,23 +1,40 @@
+import asyncio
+import json
 from functools import lru_cache
 from pprint import pprint
 from typing import Optional
 
-from fastapi import Depends, FastAPI, HTTPException, Request, status, BackgroundTasks
+import sentry_sdk
+from aiofiles import open as aio_open
+from fastapi import (BackgroundTasks, Depends, FastAPI, HTTPException, Request,
+                     status)
+from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
-from fastapi.concurrency import run_in_threadpool
 from jose import JWTError, jwt
-from aiofiles import open as aio_open
-import asyncio
-import json
 
+from client import (get_redis_connection, indexer_weaviate_client,
+                    searcher_weaviate_client)
 from config import settings
 from indexer import indexer
-from searcher import searcher
 from logger import get_logger
-from client import indexer_weaviate_client, searcher_weaviate_client, get_redis_connection
-from schemas import TokenData, WebhookRequestSchema, SaveRequest
-from utils import get_current_user, convert_user_id, get_weaviate_schemas
+from schemas import SaveRequest, TokenData, WebhookRequestSchema
+from searcher import searcher
+from utils import convert_user_id, get_current_user, get_weaviate_schemas
+
+
+sentry_sdk.init(
+    dsn=settings.SENTRY_DSN,
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for performance monitoring.
+    # We recommend adjusting this value in production.
+    traces_sample_rate=1.0,
+    # Set profiles_sample_rate to 1.0 to profile 100%
+    # of sampled transactions.
+    # We recommend adjusting this value in production.
+    profiles_sample_rate=1.0,
+)
+
 
 logger = get_logger(__name__)
 
