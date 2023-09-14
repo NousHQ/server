@@ -15,7 +15,7 @@ def indexer_weaviate_client():
     )
 
 @lru_cache
-def searcher_weaviate_client():
+def query_weaviate_client():
     return weaviate.Client(
         url=settings.WEAVIATE_URL,
         auth_client_secret=weaviate.AuthApiKey(api_key=settings.WEAVIATE_API_KEY),

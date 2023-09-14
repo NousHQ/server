@@ -14,7 +14,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
 from client import (get_redis_connection, indexer_weaviate_client,
-                    searcher_weaviate_client)
+                    query_weaviate_client)
 from config import settings
 from indexer import indexer
 from logger import get_logger
@@ -135,7 +135,7 @@ async def allSaved(current_user: TokenData = Depends(get_current_user)):
     logger.info(f"sending all saved to {current_user.sub}")
     user_id = convert_user_id(current_user.sub)
     source_class = settings.KNOWLEDGE_SOURCE_CLASS.format(user_id)
-    client = searcher_weaviate_client()
+    client = query_weaviate_client()
     response = client.query.get(source_class, ["title", "uri"]).do()
     results = []
     for i, source in enumerate(response['data']['Get'][source_class]):

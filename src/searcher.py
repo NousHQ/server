@@ -2,14 +2,14 @@ from config import settings
 from logger import get_logger
 from utils import get_no_schema_failed_exception, get_failed_exception, get_bad_search_exception
 
-from client import searcher_weaviate_client
+from client import query_weaviate_client
 from weaviate.gql.get import HybridFusion
 import json
 
 logger = get_logger(__name__)
 
 def searcher(query: str, user_id: str):
-    client = searcher_weaviate_client()
+    client = query_weaviate_client()
     source_class = settings.KNOWLEDGE_SOURCE_CLASS.format(user_id)
     content_class = settings.CONTENT_CLASS.format(user_id)
     # TODO: better way to handle this
