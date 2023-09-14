@@ -44,7 +44,7 @@ origins = [
     "https://app.nous.fyi"
 ]
 
-test_origins = "^https:\/\/nous-frontend-.*\.vercel\.app\/$"
+test_origins = "^https://nous-frontend-.*\.vercel\.app"
 
 app.add_middleware(
     CORSMiddleware,
