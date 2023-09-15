@@ -20,7 +20,7 @@ from indexer import indexer
 from logger import get_logger
 from schemas import SaveRequest, TokenData, WebhookRequestSchema
 from searcher import searcher
-from utils import convert_user_id, get_current_user, get_weaviate_schemas
+from utils import convert_user_id, get_current_user, get_weaviate_schemas, get_failed_exception
 
 
 sentry_sdk.init(
@@ -138,11 +138,15 @@ async def allSaved(current_user: TokenData = Depends(get_current_user)):
     client = query_weaviate_client()
     response = client.query.get(source_class, ["title", "uri"]).do()
     results = []
-    for i, source in enumerate(response['data']['Get'][source_class]):
-        results.append({
-            "index": i,
-            "uri": source['uri'],
-            "title": source['title']
-            })
-    
-    return results
+    try:
+        for i, source in enumerate(response['data']['Get'][source_class]):
+            results.append({
+                "index": i,
+                "uri": source['uri'],
+                "title": source['title']
+                })
+        
+        return results
+    except Exception as e:
+        logger.error(f"Error getting all saved for {user_id}: {e}\nResponse: {response}")
+        raise get_failed_exception()
