@@ -135,17 +135,16 @@ async def allSaved(current_user: TokenData = Depends(get_current_user)):
     logger.info(f"sending all saved to {current_user.sub}")
     user_id = convert_user_id(current_user.sub)
     source_class = settings.KNOWLEDGE_SOURCE_CLASS.format(user_id)
-    client = query_weaviate_client()
-    response = client.query.get(source_class, ["title", "uri"]).do()
-    results = []
     try:
+        client = query_weaviate_client()
+        response = client.query.get(source_class, ["title", "uri"]).do()
+        results = []
         for i, source in enumerate(response['data']['Get'][source_class]):
             results.append({
                 "index": i,
                 "uri": source['uri'],
                 "title": source['title']
                 })
-        
         return results
     except Exception as e:
         logger.error(f"Error getting all saved for {user_id}: {e}\nResponse: {response}")
