@@ -78,7 +78,9 @@ async def startup_event():
 
 @app.post("/api/init_schema")
 async def init_schema(webhookData: WebhookRequestSchema, background_tasks: BackgroundTasks):
+    r = get_redis_connection()
     user_id = convert_user_id(webhookData.record.id)
+    r_key = f"user:{user_id}"
     knowledge_source, content = get_weaviate_schemas(user_id)
     client = indexer_weaviate_client()
     client.schema.create({"classes": [knowledge_source, content]})
@@ -86,7 +88,7 @@ async def init_schema(webhookData: WebhookRequestSchema, background_tasks: Backg
     with open("presaved.json", "r") as f:
         data_list = json.load(f)
         for bookmark in data_list:
-            background_tasks.add_task(indexer, data=bookmark, user_id=user_id)
+            background_tasks.add_task(indexer, data=bookmark, user_id=user_id, r_conn=r)
     logger.info(f"Presaved bookmarks for user {user_id}")
     return {"user_id": webhookData.record.id, "status": "schema_initialised"}
 
