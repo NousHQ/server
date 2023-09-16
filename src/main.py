@@ -149,5 +149,5 @@ async def allSaved(current_user: TokenData = Depends(get_current_user)):
                 })
         return results
     except Exception as e:
-        logger.error(f"Error getting all saved for {user_id}: {e}\nResponse: {response}")
+        logger.error(f"Error getting all saved for {user_id}: {e}")
         raise get_failed_exception()
