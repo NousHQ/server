@@ -61,6 +61,13 @@ def indexer(data: dict, user_id: str, r_conn: StrictRedis):
                         from_object_class_name=content_class,
                         to_object_class_name=source_class
                     )
+                    batch.add_reference(
+                        from_object_uuid=parent_uuid,
+                        from_property_name="chunk_refs",
+                        to_object_uuid=chunk_uuid,
+                        from_object_class_name=source_class,
+                        to_object_class_name=content_class
+                    )
     except Exception as e:
         logger.error(f"Error {e} in indexing {uri} for {user_id}")
         raise get_failed_exception()

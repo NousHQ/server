@@ -62,6 +62,11 @@ def get_weaviate_schemas(user_id):
                 "name": "title",
                 "description": "The title of the source",
                 "dataType": ["text"]
+            },
+            {
+                "name": "chunk_refs",
+                "dataType": [content_class],
+                "description": "Reference IDs to chunks",
             }
         ]
     }
