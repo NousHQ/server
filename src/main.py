@@ -176,24 +176,24 @@ async def delete(id: str, current_user: TokenData = Depends(get_current_user)):
                 )
                 .do()
         )
-        chunk_ids = []
         chunk_refs = response["data"]["Get"][source_class][0]["chunk_refs"]
-        
-        for ref in chunk_refs:
-            chunk_ids.append(ref["_additional"]["id"])
+        chunk_ids = []
+        if chunk_refs is not None:
+            for ref in chunk_refs:
+                chunk_ids.append(ref["_additional"]["id"])
 
-        # delete all the chunks
-        client.batch.delete_objects(
-            content_class,
-            where={
-                "path": ["id"],
-                "operator": "ContainsAny",
-                "valueTextArray": chunk_ids 
-            }
-        )
-
+            # delete all the chunks
+            delete_chunk = client.batch.delete_objects(
+                content_class,
+                where={
+                    "path": ["id"],
+                    "operator": "ContainsAny",
+                    "valueTextArray": chunk_ids 
+                },
+                output="verbose"
+            )
         # delete the source object
-        client.data_object.delete(source_class, id)
+        delete_source = client.data_object.delete(class_name=source_class, uuid=id)
         return {"message": f"Bookmark with id:{id} deleted successfully"}
 
     except Exception as e:
