@@ -19,10 +19,10 @@ def searcher(query: str, user_id: str):
         response = (
             client.query.get(
                 content_class,
-                [f"hasCategory {{ ... on {source_class} {{ uri title}}}}"])
+                [f"hasCategory {{ ... on {source_class} {{ uri title _additional {{ id }}}}}}"])
                 .with_hybrid(query=query, alpha=0.75, fusion_type=HybridFusion.RELATIVE_SCORE)
                 # .with_additional("score")
-                .with_additional('rerank(property: "source_content", query: "{}") {{ score }}'.format(query))
+                .with_additional('rerank(property: "source_content", query: "{}") {{ score }}'.format(query), 'id')
                 .with_autocut(2)
                 .do()
         )
@@ -41,14 +41,16 @@ def searcher(query: str, user_id: str):
             uri = r["hasCategory"][0]["uri"]
             title = r["hasCategory"][0]["title"]
             score = r["_additional"]["rerank"][0]["score"]
+            source_id = r["hasCategory"][0]["_additional"]["id"]
             if score < 0.18:
                 continue
             if (uri, title) not in unique_uris_titles:
                 unique_uris_titles.add((uri, title))
                 results.append({
                     "index": i,
+                    "id": source_id,
                     "uri": uri,
-                    "title": title,
+                    "title": title
                 })
 
         return response, results

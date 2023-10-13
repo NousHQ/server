@@ -14,7 +14,7 @@ def indexer_weaviate_client():
         }
     )
 
-@lru_cache
+# @lru_cache
 def query_weaviate_client():
     return weaviate.Client(
         url=settings.WEAVIATE_URL,

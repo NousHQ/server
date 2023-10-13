@@ -20,7 +20,7 @@ from indexer import indexer
 from logger import get_logger
 from schemas import SaveRequest, TokenData, WebhookRequestSchema
 from searcher import searcher
-from utils import convert_user_id, get_current_user, get_weaviate_schemas, get_failed_exception
+from utils import convert_user_id, get_current_user, get_weaviate_schemas, get_failed_exception, get_delete_failed_exception
 
 
 sentry_sdk.init(
@@ -139,11 +139,12 @@ async def allSaved(current_user: TokenData = Depends(get_current_user)):
     source_class = settings.KNOWLEDGE_SOURCE_CLASS.format(user_id)
     try:
         client = query_weaviate_client()
-        response = client.query.get(source_class, ["title", "uri"]).do()
+        response = client.query.get(source_class, ["title", "uri"]).with_additional('id').do()
         results = []
         for i, source in enumerate(response['data']['Get'][source_class]):
             results.append({
                 "index": i,
+                "id": source['_additional']['id'],
                 "uri": source['uri'],
                 "title": source['title']
                 })
@@ -151,3 +152,50 @@ async def allSaved(current_user: TokenData = Depends(get_current_user)):
     except Exception as e:
         logger.error(f"Error getting all saved for {user_id}: {e}")
         raise get_failed_exception()
+
+
+@app.delete("/api/delete/{id}")
+async def delete(id: str, current_user: TokenData = Depends(get_current_user)):
+    logger.info(f"deleting data with id {id} for user {current_user.sub}")
+    user_id = convert_user_id(current_user.sub)
+    source_class = settings.KNOWLEDGE_SOURCE_CLASS.format(user_id)
+    content_class = settings.CONTENT_CLASS.format(user_id)
+    client = query_weaviate_client()
+    try:
+        # get all the chunks of the source object
+        response = (
+            client.query.get(
+                source_class,
+                [f"chunk_refs {{ ... on {content_class} {{ _additional {{ id }} }} }}"],)
+                .with_where(
+                    {
+                        "path": ["id"],
+                        "operator": "Equal",
+                        "valueString": id
+                    }
+                )
+                .do()
+        )
+        chunk_ids = []
+        chunk_refs = response["data"]["Get"][source_class][0]["chunk_refs"]
+        
+        for ref in chunk_refs:
+            chunk_ids.append(ref["_additional"]["id"])
+
+        # delete all the chunks
+        client.batch.delete_objects(
+            content_class,
+            where={
+                "path": ["id"],
+                "operator": "Equal",
+                "valueTextArray": chunk_ids 
+            }
+        )
+
+        # delete the source object
+        client.data_object.delete(source_class, id)
+        return {"message": f"Bookmark with id:{id} deleted successfully"}
+
+    except Exception as e:
+        logger.error(f"Error deleting data with id {id} for {user_id}: {e}")
+        raise get_delete_failed_exception()

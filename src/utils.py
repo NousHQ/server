@@ -20,6 +20,9 @@ def get_failed_exception():
 def get_bad_search_exception():
     return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Couldn't search for that! It wasn't saved properly.")
 
+@lru_cache
+def get_delete_failed_exception():
+    return HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Couldn't delete that!")
 
 @lru_cache
 def get_current_user(token: str = Depends(OAuth2PasswordBearer(tokenUrl="token"))):
