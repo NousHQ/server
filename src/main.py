@@ -155,7 +155,7 @@ async def allSaved(current_user: TokenData = Depends(get_current_user)):
 
 
 @app.delete("/api/delete/{id}")
-async def delete(id: str, current_user: TokenData = Depends(get_current_user)):
+async def delete_data(id: str, current_user: TokenData = Depends(get_current_user)):
     logger.info(f"deleting data with id {id} for user {current_user.sub}")
     user_id = convert_user_id(current_user.sub)
     source_class = settings.KNOWLEDGE_SOURCE_CLASS.format(user_id)
@@ -163,10 +163,11 @@ async def delete(id: str, current_user: TokenData = Depends(get_current_user)):
     client = query_weaviate_client()
     try:
         # get all the chunks of the source object
-        response = (
+        chunk_ids = []
+        source_obj = (
             client.query.get(
                 source_class,
-                [f"chunk_refs {{ ... on {content_class} {{ _additional {{ id }} }} }}"],)
+                ["uri", f"chunk_refs {{ ... on {content_class} {{ _additional {{ id }} }} }}"])
                 .with_where(
                     {
                         "path": ["id"],
@@ -176,14 +177,23 @@ async def delete(id: str, current_user: TokenData = Depends(get_current_user)):
                 )
                 .do()
         )
-        chunk_refs = response["data"]["Get"][source_class][0]["chunk_refs"]
-        chunk_ids = []
+        uri = source_obj["data"]["Get"][source_class][0]["uri"]
+
+        chunk_refs = source_obj["data"]["Get"][source_class][0]["chunk_refs"]
         if chunk_refs is not None:
             for ref in chunk_refs:
                 chunk_ids.append(ref["_additional"]["id"])
 
+        else:
+            source_obj = client.data_object.get_by_id(class_name=source_class, uuid=id)
+            if "chunk_refs" in source_obj["properties"]:
+                chunk_refs = source_obj["properties"]["chunk_refs"]
+                for ref in chunk_refs:
+                    chunk_ids.append(ref["href"].split("/")[-1])
+
+        if chunk_ids is not None:
             # delete all the chunks
-            delete_chunk = client.batch.delete_objects(
+            client.batch.delete_objects(
                 content_class,
                 where={
                     "path": ["id"],
@@ -192,10 +202,30 @@ async def delete(id: str, current_user: TokenData = Depends(get_current_user)):
                 },
                 output="verbose"
             )
+
         # delete the source object
-        delete_source = client.data_object.delete(class_name=source_class, uuid=id)
+        client.data_object.delete(class_name=source_class, uuid=id)
+
+        # delete the uri from redis for that user
+        r_key = f"user:{user_id}"
+        r_conn = get_redis_connection()
+        r_conn.srem(r_key, uri)
+
         return {"message": f"Bookmark with id:{id} deleted successfully"}
 
     except Exception as e:
         logger.error(f"Error deleting data with id {id} for {user_id}: {e}")
         raise get_delete_failed_exception()
+    
+
+@app.delete("/api/user/{id}")
+async def delete_user(id: str, current_user: TokenData = Depends(get_current_user)):
+    user_id = convert_user_id(current_user.sub)
+    source_class = settings.KNOWLEDGE_SOURCE_CLASS.format(user_id)
+    content_class = settings.CONTENT_CLASS.format(user_id)
+
+    client = query_weaviate_client()
+    client.schema.delete_class(source_class)
+    client.schema.delete_class(content_class)
+
+    return {"message": f"User {user_id} deleted successfully"}

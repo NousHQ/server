@@ -22,7 +22,7 @@ def searcher(query: str, user_id: str):
                 [f"hasCategory {{ ... on {source_class} {{ uri title _additional {{ id }}}}}}"])
                 .with_hybrid(query=query, alpha=0.75, fusion_type=HybridFusion.RELATIVE_SCORE)
                 # .with_additional("score")
-                .with_additional('rerank(property: "source_content", query: "{}") {{ score }}'.format(query), 'id')
+                .with_additional(['rerank(property: "source_content", query: "{}") {{ score }}'.format(query), 'id'])
                 .with_autocut(2)
                 .do()
         )
