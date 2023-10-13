@@ -187,7 +187,7 @@ async def delete(id: str, current_user: TokenData = Depends(get_current_user)):
             content_class,
             where={
                 "path": ["id"],
-                "operator": "Equal",
+                "operator": "ContainsAny",
                 "valueTextArray": chunk_ids 
             }
         )
