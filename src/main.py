@@ -139,9 +139,14 @@ async def allSaved(current_user: TokenData = Depends(get_current_user)):
     source_class = settings.KNOWLEDGE_SOURCE_CLASS.format(user_id)
     try:
         client = query_weaviate_client()
-        response = client.query.get(source_class, ["title", "uri"]).with_additional('id').do()
+        response = (
+            client.query.get(source_class, ["title", "uri"])
+            .with_additional(['creationTimeUnix','id'])
+            .do()
+        )
         results = []
-        for i, source in enumerate(response['data']['Get'][source_class]):
+        for i, source in enumerate(sorted(response['data']['Get'][source_class],
+                                          key=lambda x: x['_additional']['creationTimeUnix'], reverse=True)):
             results.append({
                 "index": i,
                 "id": source['_additional']['id'],
