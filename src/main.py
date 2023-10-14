@@ -184,25 +184,19 @@ async def delete_data(id: str, current_user: TokenData = Depends(get_current_use
             for ref in chunk_refs:
                 chunk_ids.append(ref["_additional"]["id"])
 
-        else:
-            source_obj = client.data_object.get_by_id(class_name=source_class, uuid=id)
-            if "chunk_refs" in source_obj["properties"]:
-                chunk_refs = source_obj["properties"]["chunk_refs"]
-                for ref in chunk_refs:
-                    chunk_ids.append(ref["href"].split("/")[-1])
+        # delete all the chunks
+        client.batch.delete_objects(
+            content_class,
+            where={
+                "path": ["id"],
+                "operator": "ContainsAny",
+                "valueTextArray": chunk_ids 
+            },
+            output="verbose",
+            # dry_run=True
+        )
 
-        if chunk_ids is not None:
-            # delete all the chunks
-            client.batch.delete_objects(
-                content_class,
-                where={
-                    "path": ["id"],
-                    "operator": "ContainsAny",
-                    "valueTextArray": chunk_ids 
-                },
-                output="verbose"
-            )
-
+        logger.info(f"Deleted {len(chunk_ids)} chunks for {user_id}")
         # delete the source object
         client.data_object.delete(class_name=source_class, uuid=id)
 
