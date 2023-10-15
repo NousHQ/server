@@ -5,7 +5,6 @@ from fastapi import HTTPException, status, Depends
 from jose import JWTError, jwt
 from fastapi.security import OAuth2PasswordBearer
 from schemas import TokenData
-# from sentence_transformers import SentenceTransformer
 
 
 @lru_cache

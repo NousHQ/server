@@ -12,6 +12,7 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
+from mixpanel import Mixpanel, Consumer
 
 from client import (get_redis_connection, indexer_weaviate_client,
                     query_weaviate_client)
@@ -34,6 +35,8 @@ sentry_sdk.init(
     # We recommend adjusting this value in production.
     profiles_sample_rate=1.0,
 )
+
+mp = Mixpanel(settings.MIXPANEL_TOKEN, consumer=Consumer(api_host="api-eu.mixpanel.com"))
 
 
 logger = get_logger(__name__)
@@ -90,6 +93,7 @@ async def init_schema(webhookData: WebhookRequestSchema, background_tasks: Backg
         for bookmark in data_list:
             background_tasks.add_task(indexer, data=bookmark, user_id=user_id, r_conn=r)
     logger.info(f"Presaved bookmarks for user {user_id}")
+    mp.track(webhookData.record.id, 'Registered')
     return {"user_id": webhookData.record.id, "status": "schema_initialised"}
 
 
@@ -110,6 +114,10 @@ async def save(saveRequest: SaveRequest, background_tasks: BackgroundTasks, curr
     data = saveRequest.model_dump()
     background_tasks.add_task(indexer, data=data, user_id=user_id, r_conn=r)
     logger.info(f"{user_id} is saving data")
+    mp.track(current_user.sub, 'Saved', {
+        'uri': saveRequest.pageData.url,
+        'title': saveRequest.pageData.title
+    })
     return {"status": "ok"}
 
 
@@ -128,7 +136,9 @@ async def query(query: str, current_user: TokenData = Depends(get_current_user))
     }
 
     await write_to_log(entry_dict)
-
+    mp.track(current_user.sub, 'Search', {
+        'search_query': query
+    })
     return {'query': query, 'results': results}
 
 
@@ -148,10 +158,10 @@ async def allSaved(current_user: TokenData = Depends(get_current_user)):
         for i, source in enumerate(sorted(response['data']['Get'][source_class],
                                           key=lambda x: x['_additional']['creationTimeUnix'], reverse=True)):
             results.append({
-                "index": i,
-                "id": source['_additional']['id'],
-                "uri": source['uri'],
-                "title": source['title']
+                    "index": i,
+                    "id": source['_additional']['id'],
+                    "uri": source['uri'],
+                    "title": source['title']
                 })
         return results
     except Exception as e:

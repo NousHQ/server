@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     SENTRY_DSN: str
     KNOWLEDGE_SOURCE_CLASS: str = "KnowledgeSourceId_{}"
     CONTENT_CLASS: str = "ContentId_{}"
+    MIXPANEL_TOKEN: str
     model_config = SettingsConfigDict(env_file=".env")
 
 settings = Settings()
