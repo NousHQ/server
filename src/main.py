@@ -12,10 +12,9 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from mixpanel import Mixpanel, Consumer
 
 from client import (get_redis_connection, indexer_weaviate_client,
-                    query_weaviate_client)
+                    query_weaviate_client, get_mixpanel_client)
 from config import settings
 from indexer import indexer
 from logger import get_logger
@@ -36,7 +35,6 @@ sentry_sdk.init(
     profiles_sample_rate=1.0,
 )
 
-mp = Mixpanel(settings.MIXPANEL_TOKEN, consumer=Consumer(api_host="api-eu.mixpanel.com"))
 
 
 logger = get_logger(__name__)
@@ -82,10 +80,11 @@ async def startup_event():
 @app.post("/api/init_schema")
 async def init_schema(webhookData: WebhookRequestSchema, background_tasks: BackgroundTasks):
     r = get_redis_connection()
+    client = indexer_weaviate_client()
+    mp = get_mixpanel_client()
     user_id = convert_user_id(webhookData.record.id)
     r_key = f"user:{user_id}"
     knowledge_source, content = get_weaviate_schemas(user_id)
-    client = indexer_weaviate_client()
     client.schema.create({"classes": [knowledge_source, content]})
     logger.info(f"New schema initialized for user {user_id}")
     with open("presaved.json", "r") as f:
@@ -105,6 +104,7 @@ async def test(request: Request, current_user: TokenData = Depends(get_current_u
 @app.post("/api/save")
 async def save(saveRequest: SaveRequest, background_tasks: BackgroundTasks, current_user: TokenData = Depends(get_current_user)):
     r = get_redis_connection()
+    mp = get_mixpanel_client()
     user_id = convert_user_id(current_user.sub)
     r_key = f"user:{user_id}"
     if r.sismember(r_key, saveRequest.pageData.url):
@@ -136,6 +136,7 @@ async def query(query: str, current_user: TokenData = Depends(get_current_user))
     }
 
     await write_to_log(entry_dict)
+    mp = get_mixpanel_client()
     mp.track(current_user.sub, 'Search', {
         'search_query': query
     })

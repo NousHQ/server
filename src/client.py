@@ -2,6 +2,8 @@ import weaviate
 from functools import lru_cache
 from config import settings
 import redis
+from mixpanel import Mixpanel, Consumer
+
 
 def indexer_weaviate_client():
     return weaviate.Client(
@@ -29,3 +31,6 @@ def query_weaviate_client():
 
 def get_redis_connection():
     return redis.StrictRedis(host='localhost', port=6379, db=0)
+
+def get_mixpanel_client():
+    return Mixpanel(settings.MIXPANEL_TOKEN, consumer=Consumer(api_host="api-eu.mixpanel.com"))
