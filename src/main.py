@@ -23,17 +23,17 @@ from searcher import searcher
 from utils import convert_user_id, get_current_user, get_weaviate_schemas, get_failed_exception, get_delete_failed_exception
 
 
-sentry_sdk.init(
-    dsn=settings.SENTRY_DSN,
-    # Set traces_sample_rate to 1.0 to capture 100%
-    # of transactions for performance monitoring.
-    # We recommend adjusting this value in production.
-    traces_sample_rate=1.0,
-    # Set profiles_sample_rate to 1.0 to profile 100%
-    # of sampled transactions.
-    # We recommend adjusting this value in production.
-    profiles_sample_rate=1.0,
-)
+# sentry_sdk.init(
+#     dsn=settings.SENTRY_DSN,
+#     # Set traces_sample_rate to 1.0 to capture 100%
+#     # of transactions for performance monitoring.
+#     # We recommend adjusting this value in production.
+#     traces_sample_rate=1.0,
+#     # Set profiles_sample_rate to 1.0 to profile 100%
+#     # of sampled transactions.
+#     # We recommend adjusting this value in production.
+#     profiles_sample_rate=1.0,
+# )
 
 
 
@@ -42,7 +42,8 @@ logger = get_logger(__name__)
 app = FastAPI()
 
 origins = [
-    "https://app.nous.fyi"
+    "https://app.nous.fyi",
+    "http://localhost:3000"
 ]
 
 test_origins = "^https://nous-frontend-.*\.vercel\.app"
@@ -142,7 +143,7 @@ async def query(query: str, current_user: TokenData = Depends(get_current_user))
     })
     return {'query': query, 'results': results}
 
-
+# TODO: has to be shifted to postgres on supabase
 @app.get("/api/all_saved")
 async def allSaved(current_user: TokenData = Depends(get_current_user)):
     logger.info(f"sending all saved to {current_user.sub}")
@@ -239,3 +240,25 @@ async def delete_user(id: str, current_user: TokenData = Depends(get_current_use
     client.schema.delete_class(content_class)
 
     return {"message": f"User {user_id} deleted successfully"}
+
+
+def get_urls(data):
+    urls = []
+    if 'url' in data:
+        urls.append(data['url'])
+    if 'links' in data:
+        for link in data['links']:
+            urls.extend(get_urls(link))
+    return urls
+
+
+@app.post("/api/import")
+async def import_bookmarks(request: Request, current_user: TokenData = Depends(get_current_user)):
+    bookmarks = await request.json()
+    pprint(bookmarks)
+    urls = get_urls(bookmarks[0])
+    pprint(urls)
+    with open("bookmarks.txt", "w") as f:
+        for url in urls:
+            f.write(url + "\n")
+    return {"status": "ok"}
