@@ -9,3 +9,4 @@ aiofiles
 redis
 sentry-sdk[fastapi]
 rq
+supabase
