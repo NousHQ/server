@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     WEAVIATE_API_KEY: str
     OPENAI_API_KEY: str
     SUPABASE_SECRET: str
+    SUPABASE_URL: str
+    SUPABASE_SERVICE_KEY: str
     HUGGINGFACE_API_URL: str
     HUGGINGFACE_API_KEY: str
     COHERE_API_KEY: str

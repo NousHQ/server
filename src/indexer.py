@@ -3,8 +3,8 @@ from urllib.parse import urlparse
 
 from logger import get_logger
 from config import settings
-from client import indexer_weaviate_client
-from utils import get_failed_exception
+from client import get_supabase_client, indexer_weaviate_client
+from utils import convert_user_id, get_failed_exception
 from redis import StrictRedis
 
 logger = get_logger(__name__)
@@ -73,5 +73,7 @@ def indexer(data: dict, user_id: str, r_conn: StrictRedis):
         raise get_failed_exception()
 
     r_conn.sadd(f"user:{user_id}", uri)
-    logger.info(f"Successfully saved {uri} for {user_id}")
+    supabase = get_supabase_client()
+    supabase.from_("all_saved").insert([{"user_id": convert_user_id(user_id), "url": uri, "title": title}]).execute()
+
     return True

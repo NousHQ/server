@@ -4,7 +4,7 @@ from functools import lru_cache
 from pprint import pprint
 from typing import Optional
 
-import sentry_sdk
+# import sentry_sdk
 from aiofiles import open as aio_open
 from fastapi import (BackgroundTasks, Depends, FastAPI, HTTPException, Request,
                      status)
@@ -12,13 +12,14 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
+import supabase
 
 from client import (get_redis_connection, indexer_weaviate_client,
-                    query_weaviate_client, get_mixpanel_client)
+                    query_weaviate_client, get_mixpanel_client, get_supabase_client)
 from config import settings
 from indexer import indexer
 from logger import get_logger
-from schemas import SaveRequest, TokenData, WebhookRequestSchema
+from schemas import Payload, SaveRequest, TokenData, WebhookRequestSchema
 from searcher import searcher
 from utils import convert_user_id, get_current_user, get_weaviate_schemas, get_failed_exception, get_delete_failed_exception
 
@@ -108,10 +109,14 @@ async def save(saveRequest: SaveRequest, background_tasks: BackgroundTasks, curr
     mp = get_mixpanel_client()
     user_id = convert_user_id(current_user.sub)
     r_key = f"user:{user_id}"
-    if r.sismember(r_key, saveRequest.pageData.url):
+    # if r.sismember(r_key, saveRequest.pageData.url):
+    #     logger.info(f"{user_id} already saved {saveRequest.pageData.url}")
+    #     return {"status": "ok"}
+    supabase = get_supabase_client()
+    data = supabase.table("all_saved").select("url").eq("user_id", current_user.sub).eq("url", saveRequest.pageData.url).execute()
+    if (len(data.data) > 0):
         logger.info(f"{user_id} already saved {saveRequest.pageData.url}")
         return {"status": "ok"}
-
     data = saveRequest.model_dump()
     background_tasks.add_task(indexer, data=data, user_id=user_id, r_conn=r)
     logger.info(f"{user_id} is saving data")
@@ -242,6 +247,7 @@ async def delete_user(id: str, current_user: TokenData = Depends(get_current_use
     return {"message": f"User {user_id} deleted successfully"}
 
 
+
 def get_urls(data):
     urls = []
     if 'url' in data:
@@ -253,12 +259,11 @@ def get_urls(data):
 
 
 @app.post("/api/import")
-async def import_bookmarks(request: Request, current_user: TokenData = Depends(get_current_user)):
-    bookmarks = await request.json()
-    pprint(bookmarks)
-    urls = get_urls(bookmarks[0])
-    pprint(urls)
-    with open("bookmarks.txt", "w") as f:
-        for url in urls:
-            f.write(url + "\n")
-    return {"status": "ok"}
+async def import_bookmarks(webhookData: Payload):
+    from redis import Redis
+    from rq import Queue
+
+    redis_conn = Redis(host='localhost', port=6379, db=0)
+    q = Queue('default', connection=redis_conn)
+    job = q.enqueue('main.importer', webhookData.model_dump())
+    logger.info(f"Job {job.id} enqueued")

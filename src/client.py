@@ -3,6 +3,7 @@ from functools import lru_cache
 from config import settings
 import redis
 from mixpanel import Mixpanel, Consumer
+from supabase import Client, create_client
 
 
 def indexer_weaviate_client():
@@ -34,3 +35,6 @@ def get_redis_connection():
 
 def get_mixpanel_client():
     return Mixpanel(settings.MIXPANEL_TOKEN, consumer=Consumer(api_host="api-eu.mixpanel.com"))
+
+def get_supabase_client():
+    return create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_KEY)

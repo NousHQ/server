@@ -42,7 +42,7 @@ def searcher(query: str, user_id: str):
             title = r["hasCategory"][0]["title"]
             score = r["_additional"]["rerank"][0]["score"]
             source_id = r["hasCategory"][0]["_additional"]["id"]
-            if score < 0.18:
+            if score < 0.15:
                 continue
             if (uri, title) not in unique_uris_titles:
                 unique_uris_titles.add((uri, title))
