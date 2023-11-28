@@ -1,4 +1,3 @@
-import weaviate
 from functools import lru_cache
 from config import settings
 from fastapi import HTTPException, status, Depends

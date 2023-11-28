@@ -4,7 +4,7 @@ from utils import get_no_schema_failed_exception, get_failed_exception, get_bad_
 
 from client import query_weaviate_client
 from weaviate.gql.get import HybridFusion
-import json
+
 
 logger = get_logger(__name__)
 

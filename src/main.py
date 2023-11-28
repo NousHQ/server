@@ -1,19 +1,11 @@
 import asyncio
 import json
-from functools import lru_cache
-from typing import Optional
 
 import sentry_sdk
 from aiofiles import open as aio_open
 from contextlib import asynccontextmanager
-from fastapi import (BackgroundTasks, Depends, FastAPI, HTTPException, Request,
-                     status)
-from fastapi.concurrency import run_in_threadpool
+from fastapi import (BackgroundTasks, Depends, FastAPI)
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
-import supabase
-
 from client import (get_redis_connection, indexer_weaviate_client,
                     query_weaviate_client, get_mixpanel_client, get_supabase_client)
 from config import settings

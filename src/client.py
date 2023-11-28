@@ -1,9 +1,8 @@
 import weaviate
-from functools import lru_cache
 from config import settings
 import redis
 from mixpanel import Mixpanel, Consumer
-from supabase import Client, create_client
+from supabase import create_client
 
 
 def indexer_weaviate_client():
