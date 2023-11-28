@@ -101,7 +101,7 @@ async def save(saveRequest: SaveRequest, background_tasks: BackgroundTasks, curr
         logger.info(f"{user_id} already saved {saveRequest.pageData.url}")
         return {"status": "ok"}
     data = saveRequest.model_dump()
-    background_tasks.add_task(indexer, data=data, user_id=user_id, r_conn=r)
+    background_tasks.add_task(indexer, data=data, user_id=user_id)
     logger.info(f"{user_id} is saving data")
     mp.track(current_user.sub, 'Saved', {
         'uri': saveRequest.pageData.url,
