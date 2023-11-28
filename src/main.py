@@ -48,6 +48,7 @@ async def write_to_log(data: dict, filename: str = 'search_logs.json'):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     asyncio.create_task(writer_worker())
+    yield
 
 origins = [
     "https://app.nous.fyi",
