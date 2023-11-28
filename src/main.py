@@ -44,7 +44,9 @@ app = FastAPI()
 
 origins = [
     "https://app.nous.fyi",
-    "http://localhost:3000"
+    "https://beta.nous.fyi",
+    "https://nous-revamp.vercel.app"
+    "http://localhost:3000",
 ]
 
 test_origins = "^https://nous-frontend-.*\.vercel\.app"
