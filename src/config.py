@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     KNOWLEDGE_SOURCE_CLASS: str = "KnowledgeSourceId_{}"
     CONTENT_CLASS: str = "ContentId_{}"
     MIXPANEL_TOKEN: str
+    JOBS_QUEUE: str
     model_config = SettingsConfigDict(env_file=".env")
 
 settings = Settings()

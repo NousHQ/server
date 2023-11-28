@@ -265,7 +265,7 @@ async def import_bookmarks(webhookData: Payload):
     from redis import Redis
     from rq import Queue
 
-    redis_conn = Redis(host='localhost', port=6379, db=0)
+    redis_conn = Redis(host=settings.JOBS_QUEUE, port=6379, db=0)
     q = Queue('default', connection=redis_conn)
     job = q.enqueue('main.importer', webhookData.model_dump())
     logger.info(f"Job {job.id} enqueued")
