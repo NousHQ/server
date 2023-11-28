@@ -9,3 +9,4 @@ model_cache/
 Pipfile
 Pipfile.lock
 .env
+.env.prod
