@@ -4,7 +4,7 @@ import json
 import sentry_sdk
 from aiofiles import open as aio_open
 from contextlib import asynccontextmanager
-from fastapi import (BackgroundTasks, Depends, FastAPI)
+from fastapi import (BackgroundTasks, Depends, FastAPI, Request)
 from fastapi.middleware.cors import CORSMiddleware
 from client import (get_redis_connection, indexer_weaviate_client,
                     query_weaviate_client, get_mixpanel_client, get_supabase_client)
@@ -60,8 +60,8 @@ test_origins = "^https://nous-frontend-.*\.vercel\.app"
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_origin_regex=test_origins,
+    # allow_origins=origins,
+    # allow_origin_regex=test_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -91,23 +91,55 @@ async def test():
     return {"status": "ok"}
 
 
+# @app.post("/api/save")
+# async def save(saveRequest: SaveRequest, background_tasks: BackgroundTasks, current_user: TokenData = Depends(get_current_user)):
+#     mp = get_mixpanel_client()
+#     user_id = convert_user_id(current_user.sub)
+#     supabase = get_supabase_client()
+#     data = supabase.table("all_saved").select("url").eq("user_id", current_user.sub).eq("url", saveRequest.pageData.url).execute()
+#     if (len(data.data) > 0):
+#         logger.info(f"{user_id} already saved {saveRequest.pageData.url}")
+#         return {"status": "ok"}
+#     data = saveRequest.model_dump()
+#     background_tasks.add_task(indexer, data=data, user_id=user_id)
+#     logger.info(f"{user_id} is saving data")
+#     mp.track(current_user.sub, 'Saved', {
+#         'uri': saveRequest.pageData.url,
+#         'title': saveRequest.pageData.title
+#     })
+#     return {"status": "ok"}
+
+
 @app.post("/api/save")
 async def save(saveRequest: SaveRequest, background_tasks: BackgroundTasks, current_user: TokenData = Depends(get_current_user)):
     mp = get_mixpanel_client()
     user_id = convert_user_id(current_user.sub)
     supabase = get_supabase_client()
-    data = supabase.table("all_saved").select("url").eq("user_id", current_user.sub).eq("url", saveRequest.pageData.url).execute()
-    if (len(data.data) > 0):
+    all_saved = supabase.table("all_saved").select("url").eq("user_id", current_user.sub).eq("url", saveRequest.pageData.url).execute()
+    if (len(all_saved.data) > 0):
         logger.info(f"{user_id} already saved {saveRequest.pageData.url}")
         return {"status": "ok"}
-    data = saveRequest.model_dump()
-    background_tasks.add_task(indexer, data=data, user_id=user_id)
+
+    if not saveRequest.pageData.content.readabilityContent:
+        textContent = saveRequest.pageData.content.readabilityContent.textContent
+    else:
+        textContent = saveRequest.pageData.content.rawText
+
+    raw_doc = {
+        "url": saveRequest.pageData.url,
+        "title": saveRequest.pageData.title,
+        "content": textContent,
+    }
+
+    background_tasks.add_task(indexer, document=raw_doc, user_id=user_id)
     logger.info(f"{user_id} is saving data")
     mp.track(current_user.sub, 'Saved', {
         'uri': saveRequest.pageData.url,
         'title': saveRequest.pageData.title
     })
+
     return {"status": "ok"}
+
 
 
 @app.get("/api/search")

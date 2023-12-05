@@ -56,11 +56,27 @@ class WebhookRequestSchema(BaseModel):
     record: Optional[Record] = None
 
 
+class Readability(BaseModel):
+    title: Optional[str] = None
+    byline: Optional[str] = None
+    dir: Optional[str] = None
+    lang: Optional[str] = None
+    content: Optional[str] = None
+    textContent: Optional[str] = None
+    length: Optional[int] = None
+    excerpt: Optional[str] = None
+    siteName: Optional[str] = None
+
+class Content(BaseModel):
+    rawText: Optional[str] = None
+    readable: Optional[bool] = None
+    readabilityContent: Optional[Readability] = None
+
 class PageData(BaseModel):
+    favIconUrl: Optional[str] = None
     url: str
     title: str
-    content: str
-
+    content: Content
 
 class SaveRequest(BaseModel):
     pageData: PageData

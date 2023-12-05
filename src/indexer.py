@@ -15,9 +15,8 @@ def preprocess(document: dict):
     return texts
 
 
-def indexer(data: dict, user_id: str):
+def indexer(document: dict, user_id: str):
     client = indexer_weaviate_client()
-    document = data["pageData"]
     title = document["title"]
     
     # Cleaning fragments
@@ -72,6 +71,6 @@ def indexer(data: dict, user_id: str):
         raise get_failed_exception()
 
     supabase = get_supabase_client()
-    supabase.from_("all_saved").insert([{"user_id": convert_user_id(user_id), "url": uri, "title": title}]).execute()
+    supabase.table("all_saved").insert([{"user_id": convert_user_id(user_id), "url": uri, "title": title}]).execute()
 
     return True
