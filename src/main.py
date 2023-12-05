@@ -115,10 +115,17 @@ async def save(saveRequest: SaveRequest, background_tasks: BackgroundTasks, curr
     mp = get_mixpanel_client()
     user_id = convert_user_id(current_user.sub)
     supabase = get_supabase_client()
-    all_saved = supabase.table("all_saved").select("url").eq("user_id", current_user.sub).eq("url", saveRequest.pageData.url).execute()
-    if (len(all_saved.data) > 0):
+    saved_uris = supabase.table("saved_uris").select("url").eq("user_id", current_user.sub).eq("url", saveRequest.pageData.url).execute()
+    if (len(saved_uris.data) > 0):
         logger.info(f"{user_id} already saved {saveRequest.pageData.url}")
         return {"status": "ok"}
+    
+    user_limit = supabase.table("user_profiles").select("user_limit").eq("id", current_user.sub).execute().data[0].get("user_limit")
+    count = supabase.table("saved_uris").select("*", count='exact').eq("user_id", current_user.sub).execute().count
+
+    if count >= user_limit:
+        logger.info(f"{user_id} has hit the limit. Current limit: {user_limit}")
+        return {"status": "limit_reached"}
 
     if not saveRequest.pageData.content.readabilityContent:
         textContent = saveRequest.pageData.content.readabilityContent.textContent
