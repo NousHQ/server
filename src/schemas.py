@@ -1,6 +1,8 @@
-from typing import List, Optional
+from typing import List, Optional, Dict
 from pydantic import BaseModel
-
+'''
+Schema for new user webhook data
+'''
 class TokenData(BaseModel):
     aud: str
     exp: int
@@ -9,7 +11,6 @@ class TokenData(BaseModel):
     sub: str
     email: Optional[str] = None
     role: Optional[str] = None
-
 
 class Record(BaseModel):
     id: str
@@ -55,6 +56,9 @@ class WebhookRequestSchema(BaseModel):
     schema: str
     record: Optional[Record] = None
 
+'''
+Schema for Save request
+'''
 
 class Readability(BaseModel):
     title: Optional[str] = None
@@ -81,6 +85,12 @@ class PageData(BaseModel):
 class SaveRequest(BaseModel):
     pageData: PageData
 
+
+'''
+Schema for Import webhook data
+'''
+
+# a bookmark link
 class Link(BaseModel):
     id: str
     name: Optional[str] = None
@@ -110,3 +120,77 @@ class Payload(BaseModel):
     record: Record
     schema: str
     old_record: Optional[Record] = None
+
+# ''' 
+# Schema for lemon squeezy webhook data
+# '''
+# class CustomData(BaseModel):
+#     user_id: str
+
+# class Meta(BaseModel):
+#     test_mode: bool
+#     event_name: str
+#     custom_data: CustomData
+#     webhook_id: str
+
+# class URLs(BaseModel):
+#     update_payment_method: HttpUrl
+#     customer_portal: HttpUrl
+
+# class Links(BaseModel):
+#     related: HttpUrl
+#     self: HttpUrl
+
+# # Generic Type for Relationship
+# T = TypeVar('T')
+
+# # Generic Relationship model
+# class Relationship(GenericModel, Generic[T]):
+#     links: Links
+
+# class FirstSubscriptionItem(BaseModel):
+#     id: int
+#     subscription_id: int
+#     price_id: int
+#     quantity: int
+#     is_usage_based: bool
+#     created_at: str
+#     updated_at: str
+
+# class Attributes(BaseModel):
+#     store_id: int
+#     customer_id: int
+#     order_id: int
+#     order_item_id: int
+#     product_id: int
+#     variant_id: int
+#     product_name: str
+#     variant_name: str
+#     user_name: str
+#     user_email: str
+#     status: str
+#     status_formatted: str
+#     card_brand: str
+#     card_last_four: str
+#     pause: Optional[bool] = None
+#     cancelled: bool
+#     trial_ends_at: Optional[datetime] = None
+#     billing_anchor: int
+#     first_subscription_item: FirstSubscriptionItem
+#     urls: URLs
+#     renews_at: Optional[datetime] = None
+#     ends_at: Optional[datetime] = None
+#     created_at: datetime
+#     updated_at: datetime
+#     test_mode: bool
+
+# class Data(BaseModel):
+#     type: str
+#     id: str
+#     attributes: Attributes
+#     relationships: Dict[str, Relationship]
+#     links: Links
+
+# class LemonSqueezy(BaseModel):
+#     meta: Meta
+#     data: Data

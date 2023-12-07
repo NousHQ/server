@@ -11,10 +11,10 @@ from client import (get_redis_connection, indexer_weaviate_client,
 from config import settings
 from indexer import indexer
 from logger import get_logger
-from schemas import Payload, SaveRequest, TokenData, WebhookRequestSchema
+from schemas import  Payload, SaveRequest, TokenData, WebhookRequestSchema
 from searcher import searcher
 from utils import convert_user_id, get_current_user, get_weaviate_schemas, get_failed_exception, get_delete_failed_exception
-
+from payment_routes import router as payment_router
 
 sentry_sdk.init(
     dsn=settings.SENTRY_DSN,
@@ -52,11 +52,10 @@ async def lifespan(app: FastAPI):
 
 origins = [
     "https://app.nous.fyi",
-    "https://beta.nous.fyi",
     "https://nous-revamp.vercel.app"
     "http://localhost:3000",
 ]
-test_origins = "^https://nous-frontend-.*\.vercel\.app"
+test_origins = "^https://nous-revamp-.*\.vercel\.app"
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
@@ -66,6 +65,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+app.include_router(payment_router)
 
 @app.post("/api/init_schema")
 async def init_schema(webhookData: WebhookRequestSchema, background_tasks: BackgroundTasks):
@@ -86,9 +88,6 @@ async def init_schema(webhookData: WebhookRequestSchema, background_tasks: Backg
     return {"user_id": webhookData.record.id, "status": "schema_initialised"}
 
 
-@app.post("/api/healthcheck")
-async def test():
-    return {"status": "ok"}
 
 
 # @app.post("/api/save")
