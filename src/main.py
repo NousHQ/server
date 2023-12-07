@@ -71,18 +71,16 @@ app.include_router(payment_router)
 
 @app.post("/api/init_schema")
 async def init_schema(webhookData: WebhookRequestSchema, background_tasks: BackgroundTasks):
-    r = get_redis_connection()
     client = indexer_weaviate_client()
     mp = get_mixpanel_client()
     user_id = convert_user_id(webhookData.record.id)
-    r_key = f"user:{user_id}"
     knowledge_source, content = get_weaviate_schemas(user_id)
     client.schema.create({"classes": [knowledge_source, content]})
     logger.info(f"New schema initialized for user {user_id}")
     with open("presaved.json", "r") as f:
         data_list = json.load(f)
         for bookmark in data_list:
-            background_tasks.add_task(indexer, data=bookmark, user_id=user_id, r_conn=r)
+            background_tasks.add_task(indexer, data=bookmark, user_id=user_id)
     logger.info(f"Presaved bookmarks for user {user_id}")
     mp.track(webhookData.record.id, 'Registered')
     return {"user_id": webhookData.record.id, "status": "schema_initialised"}
