@@ -4,17 +4,17 @@ import json
 import sentry_sdk
 from aiofiles import open as aio_open
 from contextlib import asynccontextmanager
-from fastapi import (BackgroundTasks, Depends, FastAPI)
+from fastapi import (BackgroundTasks, Depends, FastAPI, Request)
 from fastapi.middleware.cors import CORSMiddleware
 from client import (get_redis_connection, indexer_weaviate_client,
                     query_weaviate_client, get_mixpanel_client, get_supabase_client)
 from config import settings
 from indexer import indexer
 from logger import get_logger
-from schemas import Payload, SaveRequest, TokenData, WebhookRequestSchema
+from schemas import  Payload, SaveRequest, TokenData, WebhookRequestSchema
 from searcher import searcher
 from utils import convert_user_id, get_current_user, get_weaviate_schemas, get_failed_exception, get_delete_failed_exception
-
+from payment_routes import router as payment_router
 
 sentry_sdk.init(
     dsn=settings.SENTRY_DSN,
@@ -52,20 +52,22 @@ async def lifespan(app: FastAPI):
 
 origins = [
     "https://app.nous.fyi",
-    "https://beta.nous.fyi",
     "https://nous-revamp.vercel.app"
     "http://localhost:3000",
 ]
-test_origins = "^https://nous-frontend-.*\.vercel\.app"
+test_origins = "^https://nous-revamp-.*\.vercel\.app"
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_origin_regex=test_origins,
+    # allow_origins=origins,
+    # allow_origin_regex=test_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+app.include_router(payment_router)
 
 @app.post("/api/init_schema")
 async def init_schema(webhookData: WebhookRequestSchema, background_tasks: BackgroundTasks):
@@ -86,9 +88,25 @@ async def init_schema(webhookData: WebhookRequestSchema, background_tasks: Backg
     return {"user_id": webhookData.record.id, "status": "schema_initialised"}
 
 
-@app.post("/api/healthcheck")
-async def test():
-    return {"status": "ok"}
+
+
+# @app.post("/api/save")
+# async def save(saveRequest: SaveRequest, background_tasks: BackgroundTasks, current_user: TokenData = Depends(get_current_user)):
+#     mp = get_mixpanel_client()
+#     user_id = convert_user_id(current_user.sub)
+#     supabase = get_supabase_client()
+#     data = supabase.table("all_saved").select("url").eq("user_id", current_user.sub).eq("url", saveRequest.pageData.url).execute()
+#     if (len(data.data) > 0):
+#         logger.info(f"{user_id} already saved {saveRequest.pageData.url}")
+#         return {"status": "ok"}
+#     data = saveRequest.model_dump()
+#     background_tasks.add_task(indexer, data=data, user_id=user_id)
+#     logger.info(f"{user_id} is saving data")
+#     mp.track(current_user.sub, 'Saved', {
+#         'uri': saveRequest.pageData.url,
+#         'title': saveRequest.pageData.title
+#     })
+#     return {"status": "ok"}
 
 
 @app.post("/api/save")
@@ -96,18 +114,38 @@ async def save(saveRequest: SaveRequest, background_tasks: BackgroundTasks, curr
     mp = get_mixpanel_client()
     user_id = convert_user_id(current_user.sub)
     supabase = get_supabase_client()
-    data = supabase.table("all_saved").select("url").eq("user_id", current_user.sub).eq("url", saveRequest.pageData.url).execute()
-    if (len(data.data) > 0):
+    saved_uris = supabase.table("saved_uris").select("url").eq("user_id", current_user.sub).eq("url", saveRequest.pageData.url).execute()
+    if (len(saved_uris.data) > 0):
         logger.info(f"{user_id} already saved {saveRequest.pageData.url}")
         return {"status": "ok"}
-    data = saveRequest.model_dump()
-    background_tasks.add_task(indexer, data=data, user_id=user_id)
+    
+    user_limit = supabase.table("user_profiles").select("user_limit").eq("id", current_user.sub).execute().data[0].get("user_limit")
+    count = supabase.table("saved_uris").select("*", count='exact').eq("user_id", current_user.sub).execute().count
+
+    if count >= user_limit:
+        logger.info(f"{user_id} has hit the limit. Current limit: {user_limit}")
+        return {"status": "limit_reached"}
+
+    if not saveRequest.pageData.content.readabilityContent:
+        textContent = saveRequest.pageData.content.readabilityContent.textContent
+    else:
+        textContent = saveRequest.pageData.content.rawText
+
+    raw_doc = {
+        "url": saveRequest.pageData.url,
+        "title": saveRequest.pageData.title,
+        "content": textContent,
+    }
+
+    background_tasks.add_task(indexer, document=raw_doc, user_id=user_id)
     logger.info(f"{user_id} is saving data")
     mp.track(current_user.sub, 'Saved', {
         'uri': saveRequest.pageData.url,
         'title': saveRequest.pageData.title
     })
+
     return {"status": "ok"}
+
 
 
 @app.get("/api/search")
@@ -233,9 +271,9 @@ async def delete_user(id: str, current_user: TokenData = Depends(get_current_use
 @app.post("/api/import")
 async def import_bookmarks(webhookData: Payload):
     from redis import Redis
-    from rq import Queue
+    from rq import Queue, Retry
 
     redis_conn = Redis(host=settings.JOBS_QUEUE, port=6379, db=0)
-    q = Queue('default', connection=redis_conn)
-    job = q.enqueue('main.importer', webhookData.model_dump())
+    q = Queue('default', connection=redis_conn, default_timeout=1200)
+    job = q.enqueue('main.importer', webhookData.model_dump(), retry=Retry(max=3, interval=60))
     logger.info(f"Job {job.id} enqueued")
