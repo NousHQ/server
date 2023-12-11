@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     CONTENT_CLASS: str = "ContentId_{}"
     MIXPANEL_TOKEN: str
     JOBS_QUEUE: str
+    LEMON_SQUEEZY_SECRET: str
     model_config = SettingsConfigDict(env_file=".env")
 
 settings = Settings()
