@@ -59,8 +59,8 @@ test_origins = "^https://nous-revamp-.*\.vercel\.app"
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    # allow_origins=origins,
-    # allow_origin_regex=test_origins,
+    allow_origins=origins,
+    allow_origin_regex=test_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -117,12 +117,12 @@ async def save(saveRequest: SaveRequest, background_tasks: BackgroundTasks, curr
         logger.info(f"{user_id} already saved {saveRequest.pageData.url}")
         return {"status": "ok"}
     
-    user_limit = supabase.table("user_profiles").select("user_limit").eq("id", current_user.sub).execute().data[0].get("user_limit")
-    count = supabase.table("saved_uris").select("*", count='exact').eq("user_id", current_user.sub).execute().count
+    # user_limit = supabase.table("user_profiles").select("user_limit").eq("id", current_user.sub).execute().data[0].get("user_limit")
+    # count = supabase.table("saved_uris").select("*", count='exact').eq("user_id", current_user.sub).execute().count
 
-    if count >= user_limit:
-        logger.info(f"{user_id} has hit the limit. Current limit: {user_limit}")
-        return {"status": "limit_reached"}
+    # if count >= user_limit:
+    #     logger.info(f"{user_id} has hit the limit. Current limit: {user_limit}")
+    #     return {"status": "limit_reached"}
 
     if not saveRequest.pageData.content.readabilityContent.textContent:
         textContent = saveRequest.pageData.content.readabilityContent.textContent
