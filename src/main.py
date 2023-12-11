@@ -124,7 +124,7 @@ async def save(saveRequest: SaveRequest, background_tasks: BackgroundTasks, curr
         logger.info(f"{user_id} has hit the limit. Current limit: {user_limit}")
         return {"status": "limit_reached"}
 
-    if not saveRequest.pageData.content.readabilityContent:
+    if not saveRequest.pageData.content.readabilityContent.textContent:
         textContent = saveRequest.pageData.content.readabilityContent.textContent
     else:
         textContent = saveRequest.pageData.content.rawText
