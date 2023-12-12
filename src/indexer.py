@@ -71,6 +71,6 @@ def indexer(document: dict, user_id: str):
         raise get_failed_exception()
 
     supabase = get_supabase_client()
-    supabase.table("saved_uris").insert([{"user_id": convert_user_id(user_id), "url": uri, "title": title}]).execute()
+    supabase.table("saved_uris").insert([{"id": parent_uuid, "user_id": convert_user_id(user_id), "url": uri, "title": title}]).execute()
 
     return True

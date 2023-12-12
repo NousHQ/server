@@ -70,7 +70,7 @@ app.add_middleware(
 app.include_router(payment_router)
 
 @app.post("/api/init_schema")
-async def init_schema(webhookData: WebhookRequestSchema, background_tasks: BackgroundTasks):
+async def init_schema(webhookData: WebhookRequestSchema):
     client = indexer_weaviate_client()
     mp = get_mixpanel_client()
     user_id = convert_user_id(webhookData.record.id)
