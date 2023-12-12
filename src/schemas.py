@@ -1,7 +1,8 @@
+from datetime import datetime
 from typing import List, Optional, Dict
 from pydantic import BaseModel
 '''
-Schema for new user webhook data
+Schema for NEW USER webhook data
 '''
 class TokenData(BaseModel):
     aud: str
@@ -57,7 +58,7 @@ class WebhookRequestSchema(BaseModel):
     record: Optional[Record] = None
 
 '''
-Schema for Save request
+Schema for SAVE request
 '''
 
 class Readability(BaseModel):
@@ -87,7 +88,7 @@ class SaveRequest(BaseModel):
 
 
 '''
-Schema for Import webhook data
+Schema for IMPORT webhook data
 '''
 
 # a bookmark link
@@ -120,6 +121,27 @@ class Payload(BaseModel):
     record: Record
     schema: str
     old_record: Optional[Record] = None
+
+
+'''
+Schema for DELETE webhook data
+'''
+class OldRecord(BaseModel):
+    id: str
+    url: str
+    tags: Optional[str]
+    title: str
+    img_url: str
+    user_id: str
+    metadata: Optional[str]
+    created_at: datetime
+
+class DeleteSchema(BaseModel):
+    type: str
+    table: str
+    record: Optional[str]
+    schema: str
+    old_record: OldRecord
 
 # ''' 
 # Schema for lemon squeezy webhook data

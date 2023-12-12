@@ -11,7 +11,7 @@ from client import (get_redis_connection, indexer_weaviate_client,
 from config import settings
 from indexer import indexer
 from logger import get_logger
-from schemas import  Payload, SaveRequest, TokenData, WebhookRequestSchema
+from schemas import  Payload, SaveRequest, TokenData, WebhookRequestSchema, DeleteSchema
 from searcher import searcher
 from utils import convert_user_id, get_current_user, get_weaviate_schemas, get_failed_exception, get_delete_failed_exception
 from payment_routes import router as payment_router
@@ -78,7 +78,6 @@ async def init_schema(webhookData: WebhookRequestSchema):
     client.schema.create({"classes": [knowledge_source, content]})
     mp.track(webhookData.record.id, 'Registered')
     return {"user_id": webhookData.record.id, "status": "schema_initialised"}
-
 
 
 
@@ -162,6 +161,7 @@ async def query(query: str, current_user: TokenData = Depends(get_current_user))
     })
     return {'query': query, 'results': results}
 
+
 # TODO: has to been shifted on to postgres supabase.
 @app.get("/api/all_saved")
 async def allSaved(current_user: TokenData = Depends(get_current_user)):
@@ -236,16 +236,65 @@ async def delete_data(id: str, current_user: TokenData = Depends(get_current_use
         # delete the source object
         client.data_object.delete(class_name=source_class, uuid=id)
 
-        # delete the uri from redis for that user
-        # r_key = f"user:{user_id}"
-        # r_conn = get_redis_connection()
-        # r_conn.srem(r_key, uri)
-
         return {"message": f"Bookmark with id:{id} deleted successfully"}
 
     except Exception as e:
         logger.error(f"Error deleting data with id {id} for {user_id}: {e}")
         raise get_delete_failed_exception()
+
+
+@app.post("/api/delete")
+async def delete_uri(deleteRequest: DeleteSchema):
+    user_id = convert_user_id(deleteRequest.old_record.user_id)
+    uri_id = deleteRequest.old_record.id
+    uri = deleteRequest.old_record.url
+    logger.info(f"[!] Deleting {uri} for {user_id}")
+    source_class = settings.KNOWLEDGE_SOURCE_CLASS.format(user_id)
+    content_class = settings.CONTENT_CLASS.format(user_id)
+    client = query_weaviate_client()
+    try:
+    # get all the chunks of the source object
+        chunk_ids = []
+        source_obj = (
+            client.query.get(
+                source_class,
+                ["uri", f"chunk_refs {{ ... on {content_class} {{ _additional {{ id }} }} }}"])
+                .with_where(
+                    {
+                        "path": ["id"],
+                        "operator": "Equal",
+                        "valueString": uri_id
+                    }
+                )
+                .do()
+        )
+
+        chunk_refs = source_obj["data"]["Get"][source_class][0]["chunk_refs"]
+        if chunk_refs is not None:
+            for ref in chunk_refs:
+                chunk_ids.append(ref["_additional"]["id"])
+
+    #     # delete all the chunks
+        client.batch.delete_objects(
+            content_class,
+            where={
+                "path": ["id"],
+                "operator": "ContainsAny",
+                "valueTextArray": chunk_ids 
+            },
+            output="verbose",
+            # dry_run=True
+        )
+
+        logger.info(f"[!] Deleted {len(chunk_ids)} chunks for {user_id}")
+
+    except Exception as e:
+        logger.error(f"Error deleting data with id {id} for {user_id}: {e}")
+        raise get_delete_failed_exception()
+
+    logger.info(f"[!] Deleted {uri} for {user_id}")
+    
+    return {"message": f"Bookmark with id:{uri_id} deleted successfully"}
 
 
 @app.delete("/api/user/{id}")
