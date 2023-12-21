@@ -95,7 +95,7 @@ async def init_schema(webhookData: WebhookRequestSchema):
         "userId": user_id,
     }
     headers = {
-        "Authorization": settings.LOOPS_API_KEY,
+        "Authorization": f"Bearer {settings.LOOPS_API_KEY}",
         "Content-Type": "application/json"
     }
     response = requests.request("POST", settings.LOOPS_URL, json=loops_payload, headers=headers)
