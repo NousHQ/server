@@ -15,6 +15,8 @@ from schemas import  Payload, SaveRequest, TokenData, WebhookRequestSchema, Dele
 from searcher import searcher
 from utils import convert_user_id, get_current_user, get_weaviate_schemas, get_failed_exception, get_delete_failed_exception
 from payment_routes import router as payment_router
+import requests
+
 
 sentry_sdk.init(
     dsn=settings.SENTRY_DSN,
@@ -71,12 +73,33 @@ app.include_router(payment_router)
 
 @app.post("/api/init_schema")
 async def init_schema(webhookData: WebhookRequestSchema):
+    user_id = webhookData.record.id
+    email = webhookData.record.email
+
     client = indexer_weaviate_client()
     mp = get_mixpanel_client()
-    user_id = convert_user_id(webhookData.record.id)
-    knowledge_source, content = get_weaviate_schemas(user_id)
+    knowledge_source, content = get_weaviate_schemas(convert_user_id(user_id))
     client.schema.create({"classes": [knowledge_source, content]})
-    mp.track(webhookData.record.id, 'Registered')
+    # mp.people_set(user_id, {
+    #     '$email': email,
+    # }, meta = {'$ignore_time' : False}
+    # )
+
+    mp.track(user_id, 'Registered', {
+        '$distinct_id': user_id,
+    })
+
+    loops_payload = {
+        "email": email,
+        "source": "Sign Up",
+        "userId": user_id,
+    }
+    headers = {
+        "Authorization": settings.LOOPS_API_KEY,
+        "Content-Type": "application/json"
+    }
+    response = requests.request("POST", settings.LOOPS_API_KEY, json=loops_payload, headers=headers)
+
     return {"user_id": webhookData.record.id, "status": "schema_initialised"}
 
 

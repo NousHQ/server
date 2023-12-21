@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     SENTRY_DSN: str
     KNOWLEDGE_SOURCE_CLASS: str = "KnowledgeSourceId_{}"
     CONTENT_CLASS: str = "ContentId_{}"
+    LOOPS_URL: str = "https://app.loops.so/api/v1/contacts/create"
+    LOOPS_API_KEY: str
     MIXPANEL_TOKEN: str
     JOBS_QUEUE: str
     LEMON_SQUEEZY_SECRET: str
