@@ -87,8 +87,8 @@ async def init_schema(webhookData: WebhookRequestSchema):
 
     mp.track(user_id, 'Registered', {
         '$distinct_id': user_id,
+        '$email': email,
     })
-
     loops_payload = {
         "email": email,
         "source": "Sign Up",
@@ -99,6 +99,7 @@ async def init_schema(webhookData: WebhookRequestSchema):
         "Content-Type": "application/json"
     }
     response = requests.request("POST", settings.LOOPS_URL, json=loops_payload, headers=headers)
+    logger.info(f"Added user {user_id}:{email} to Loops:: {response.text}")
 
     return {"user_id": webhookData.record.id, "status": "schema_initialised"}
 
