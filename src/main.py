@@ -54,7 +54,7 @@ async def lifespan(app: FastAPI):
 
 origins = [
     "https://app.nous.fyi",
-    "https://nous-revamp.vercel.app"
+    "https://nous-revamp.vercel.app",
     "http://localhost:3000",
 ]
 test_origins = "^https://nous-revamp-.*\.vercel\.app"
